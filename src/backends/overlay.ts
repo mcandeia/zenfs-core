@@ -38,26 +38,19 @@ export interface OverlayOptions {
  * @internal
  */
 export class UnmutexedOverlayFS extends FileSystem {
+	public readonly writable: FileSystem;
+	public readonly readable: FileSystem;
+	private _isInitialized: boolean = false;
+	private deletedFiles: Set<string> = new Set();
+	private deleteLog: string = '';
+
+	private _ready: Promise<void>;
+
 	async ready(): Promise<void> {
 		await this.readable.ready();
 		await this.writable.ready();
 		await this._ready;
 	}
-
-	public readonly writable: FileSystem;
-	public readonly readable: FileSystem;
-	private _isInitialized: boolean = false;
-	private _deletedFiles: Set<string> = new Set();
-	private _deleteLog: string = '';
-	// If 'true', we have scheduled a delete log update.
-	private _deleteLogUpdatePending: boolean = false;
-	// If 'true', a delete log update is needed after the scheduled delete log
-	// update finishes.
-	private _deleteLogUpdateNeeded: boolean = false;
-	// If there was an error updating the delete log...
-	private _deleteLogError?: ErrnoError;
-
-	private _ready: Promise<void>;
 
 	constructor({ writable, readable }: OverlayOptions) {
 		super();
@@ -105,62 +98,47 @@ export class UnmutexedOverlayFS extends FileSystem {
 			const file = await this.writable.openFile(deletionLogPath, parseFlag('r'), rootCred);
 			const { size } = await file.stat();
 			const { buffer } = await file.read(new Uint8Array(size));
-			this._deleteLog = decode(buffer);
+			this.deleteLog = decode(buffer);
 		} catch (err) {
 			if ((err as ErrnoError).errno !== Errno.ENOENT) {
 				throw err;
 			}
 		}
 		this._isInitialized = true;
-		this._reparseDeletionLog();
+		this.reparseDeletionLog();
 	}
 
 	public getDeletionLog(): string {
-		return this._deleteLog;
+		return this.deleteLog;
 	}
 
 	public async restoreDeletionLog(log: string, cred: Cred): Promise<void> {
-		this._deleteLog = log;
-		this._reparseDeletionLog();
+		this.deleteLog = log;
+		this.reparseDeletionLog();
 		await this.updateLog('', cred);
 	}
 
 	public async rename(oldPath: string, newPath: string, cred: Cred): Promise<void> {
-		this.checkInitialized();
-		this.checkPath(oldPath);
-		this.checkPath(newPath);
-
-		try {
-			await this.writable.rename(oldPath, newPath, cred);
-		} catch (e) {
-			if (this._deletedFiles.has(oldPath)) {
-				throw ErrnoError.With('ENOENT', oldPath, 'rename');
-			}
+		if (this.deletedFiles.has(oldPath)) {
+			throw ErrnoError.With('ENOENT', oldPath, 'rename');
 		}
+		await this.writable.rename(oldPath, newPath, cred);
 	}
 
 	public renameSync(oldPath: string, newPath: string, cred: Cred): void {
-		this.checkInitialized();
-		this.checkPath(oldPath);
-		this.checkPath(newPath);
-
-		try {
-			this.writable.renameSync(oldPath, newPath, cred);
-		} catch (e) {
-			if (this._deletedFiles.has(oldPath)) {
-				throw ErrnoError.With('ENOENT', oldPath, 'rename');
-			}
+		if (this.deletedFiles.has(oldPath)) {
+			throw ErrnoError.With('ENOENT', oldPath, 'rename');
 		}
+		this.writable.renameSync(oldPath, newPath, cred);
 	}
 
 	public async stat(path: string, cred: Cred): Promise<Stats> {
-		this.checkInitialized();
+		if (this.deletedFiles.has(path)) {
+			throw ErrnoError.With('ENOENT', path, 'stat');
+		}
 		try {
 			return await this.writable.stat(path, cred);
 		} catch (e) {
-			if (this._deletedFiles.has(path)) {
-				throw ErrnoError.With('ENOENT', path, 'stat');
-			}
 			const oldStat = new Stats(await this.readable.stat(path, cred));
 			// Make the oldStat's mode writable. Preserve the topmost part of the mode, which specifies the type
 			oldStat.mode |= 0o222;
@@ -169,13 +147,12 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public statSync(path: string, cred: Cred): Stats {
-		this.checkInitialized();
+		if (this.deletedFiles.has(path)) {
+			throw ErrnoError.With('ENOENT', path, 'stat');
+		}
 		try {
 			return this.writable.statSync(path, cred);
 		} catch (e) {
-			if (this._deletedFiles.has(path)) {
-				throw ErrnoError.With('ENOENT', path, 'stat');
-			}
 			const oldStat = new Stats(this.readable.statSync(path, cred));
 			// Make the oldStat's mode writable. Preserve the topmost part of the mode, which specifies the type.
 			oldStat.mode |= 0o222;
@@ -187,8 +164,8 @@ export class UnmutexedOverlayFS extends FileSystem {
 		if (await this.writable.exists(path, cred)) {
 			return this.writable.openFile(path, flag, cred);
 		}
-		// Create an OverlayFile.
-		const file = await this.readable.openFile(path, parseFlag('r'), cred);
+		// Create an overlay file.
+		using file = await this.readable.openFile(path, parseFlag('r'), cred);
 		const stats = new Stats(await file.stat());
 		const { buffer } = await file.read(new Uint8Array(stats.size));
 		return new PreloadFile(this, path, flag, stats, buffer);
@@ -198,8 +175,8 @@ export class UnmutexedOverlayFS extends FileSystem {
 		if (this.writable.existsSync(path, cred)) {
 			return this.writable.openFileSync(path, flag, cred);
 		}
-		// Create an OverlayFile.
-		const file = this.readable.openFileSync(path, parseFlag('r'), cred);
+		// Create an overlay file.
+		using file = this.readable.openFileSync(path, parseFlag('r'), cred);
 		const stats = new Stats(file.statSync());
 		const data = new Uint8Array(stats.size);
 		file.readSync(data);
@@ -207,30 +184,24 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public async createFile(path: string, flag: string, mode: number, cred: Cred): Promise<File> {
-		this.checkInitialized();
 		await this.writable.createFile(path, flag, mode, cred);
 		return this.openFile(path, flag, cred);
 	}
 
 	public createFileSync(path: string, flag: string, mode: number, cred: Cred): File {
-		this.checkInitialized();
 		this.writable.createFileSync(path, flag, mode, cred);
 		return this.openFileSync(path, flag, cred);
 	}
 
 	public async link(srcpath: string, dstpath: string, cred: Cred): Promise<void> {
-		this.checkInitialized();
 		await this.writable.link(srcpath, dstpath, cred);
 	}
 
 	public linkSync(srcpath: string, dstpath: string, cred: Cred): void {
-		this.checkInitialized();
 		this.writable.linkSync(srcpath, dstpath, cred);
 	}
 
 	public async unlink(path: string, cred: Cred): Promise<void> {
-		this.checkInitialized();
-		this.checkPath(path);
 		if (!(await this.exists(path, cred))) {
 			throw ErrnoError.With('ENOENT', path, 'unlink');
 		}
@@ -246,8 +217,6 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public unlinkSync(path: string, cred: Cred): void {
-		this.checkInitialized();
-		this.checkPath(path);
 		if (!this.existsSync(path, cred)) {
 			throw ErrnoError.With('ENOENT', path, 'unlink');
 		}
@@ -263,7 +232,6 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public async rmdir(path: string, cred: Cred): Promise<void> {
-		this.checkInitialized();
 		if (!(await this.exists(path, cred))) {
 			throw ErrnoError.With('ENOENT', path, 'rmdir');
 		}
@@ -281,7 +249,6 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public rmdirSync(path: string, cred: Cred): void {
-		this.checkInitialized();
 		if (!this.existsSync(path, cred)) {
 			throw ErrnoError.With('ENOENT', path, 'rmdir');
 		}
@@ -299,7 +266,6 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public async mkdir(path: string, mode: number, cred: Cred): Promise<void> {
-		this.checkInitialized();
 		if (await this.exists(path, cred)) {
 			throw ErrnoError.With('EEXIST', path, 'mkdir');
 		}
@@ -309,7 +275,6 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public mkdirSync(path: string, mode: number, cred: Cred): void {
-		this.checkInitialized();
 		if (this.existsSync(path, cred)) {
 			throw ErrnoError.With('EEXIST', path, 'mkdir');
 		}
@@ -319,9 +284,7 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public async readdir(path: string, cred: Cred): Promise<string[]> {
-		this.checkInitialized();
-		const dirStats = await this.stat(path, cred);
-		if (!dirStats.isDirectory()) {
+		if (!(await this.stat(path, cred)).isDirectory()) {
 			throw ErrnoError.With('ENOTDIR', path, 'readdir');
 		}
 
@@ -333,7 +296,7 @@ export class UnmutexedOverlayFS extends FileSystem {
 			// NOP.
 		}
 		try {
-			contents.push(...(await this.readable.readdir(path, cred)).filter((fPath: string) => !this._deletedFiles.has(`${path}/${fPath}`)));
+			contents.push(...(await this.readable.readdir(path, cred)).filter((fPath: string) => !this.deletedFiles.has(`${path}/${fPath}`)));
 		} catch (e) {
 			// NOP.
 		}
@@ -346,9 +309,7 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	public readdirSync(path: string, cred: Cred): string[] {
-		this.checkInitialized();
-		const dirStats = this.statSync(path, cred);
-		if (!dirStats.isDirectory()) {
+		if (!this.statSync(path, cred).isDirectory()) {
 			throw ErrnoError.With('ENOTDIR', path, 'readdir');
 		}
 
@@ -360,7 +321,7 @@ export class UnmutexedOverlayFS extends FileSystem {
 			// NOP.
 		}
 		try {
-			contents = contents.concat(this.readable.readdirSync(path, cred).filter((fPath: string) => !this._deletedFiles.has(`${path}/${fPath}`)));
+			contents = contents.concat(this.readable.readdirSync(path, cred).filter((fPath: string) => !this.deletedFiles.has(`${path}/${fPath}`)));
 		} catch (e) {
 			// NOP.
 		}
@@ -373,61 +334,26 @@ export class UnmutexedOverlayFS extends FileSystem {
 	}
 
 	private async deletePath(path: string, cred: Cred): Promise<void> {
-		this._deletedFiles.add(path);
+		this.deletedFiles.add(path);
 		await this.updateLog(`d${path}\n`, cred);
 	}
 
 	private async updateLog(addition: string, cred: Cred) {
-		this._deleteLog += addition;
-		if (this._deleteLogUpdatePending) {
-			this._deleteLogUpdateNeeded = true;
-			return;
-		}
-		this._deleteLogUpdatePending = true;
-		const log = await this.writable.openFile(deletionLogPath, parseFlag('w'), cred);
-		try {
-			await log.write(encode(this._deleteLog));
-			if (this._deleteLogUpdateNeeded) {
-				this._deleteLogUpdateNeeded = false;
-				await this.updateLog('', cred);
-			}
-		} catch (e) {
-			this._deleteLogError = e as ErrnoError;
-		} finally {
-			this._deleteLogUpdatePending = false;
-		}
+		this.deleteLog += addition;
+
+		using log = await this.writable.openFile(deletionLogPath, parseFlag('w'), cred);
+		await log.write(encode(this.deleteLog));
 	}
 
-	private _reparseDeletionLog(): void {
-		this._deletedFiles.clear();
-		for (const entry of this._deleteLog.split('\n')) {
+	private reparseDeletionLog(): void {
+		this.deletedFiles.clear();
+		for (const entry of this.deleteLog.split('\n')) {
 			if (!entry.startsWith('d')) {
 				continue;
 			}
 
 			// If the log entry begins w/ 'd', it's a deletion.
-
-			this._deletedFiles.add(entry.slice(1));
-		}
-	}
-
-	private checkInitialized(): void {
-		if (!this._isInitialized) {
-			throw new ErrnoError(Errno.EPERM, 'OverlayFS is not initialized. Please initialize OverlayFS using its initialize() method before using it.');
-		}
-
-		if (!this._deleteLogError) {
-			return;
-		}
-
-		const error = this._deleteLogError;
-		delete this._deleteLogError;
-		throw error;
-	}
-
-	private checkPath(path: string): void {
-		if (path == deletionLogPath) {
-			throw ErrnoError.With('EPERM', path, 'checkPath');
+			this.deletedFiles.add(entry.slice(1));
 		}
 	}
 
