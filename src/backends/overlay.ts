@@ -289,23 +289,13 @@ export class UnmutexedOverlayFS extends FileSystem {
 		}
 
 		// Readdir in both, check delete log on RO file system's listing, merge, return.
-		const contents: string[] = [];
-		try {
-			contents.push(...(await this.writable.readdir(path, cred)));
-		} catch (e) {
-			// NOP.
-		}
-		try {
-			contents.push(...(await this.readable.readdir(path, cred)).filter((fPath: string) => !this.deletedFiles.has(`${path}/${fPath}`)));
-		} catch (e) {
-			// NOP.
-		}
-		const seenMap: { [name: string]: boolean } = {};
-		return contents.filter((path: string) => {
-			const result = !seenMap[path];
-			seenMap[path] = true;
-			return result;
-		});
+
+		return [
+			...new Set([
+				...(await this.writable.readdir(path, cred).catch(() => [])),
+				...(await this.readable.readdir(path, cred).catch(() => [])).filter((file: string) => !this.deletedFiles.has(`${path}/${file}`)),
+			]),
+		];
 	}
 
 	public readdirSync(path: string, cred: Cred): string[] {
@@ -314,23 +304,26 @@ export class UnmutexedOverlayFS extends FileSystem {
 		}
 
 		// Readdir in both, check delete log on RO file system's listing, merge, return.
-		let contents: string[] = [];
+		const contents = new Set<string>();
 		try {
-			contents = contents.concat(this.writable.readdirSync(path, cred));
+			for (const file of this.writable.readdirSync(path, cred)) {
+				contents.add(file);
+			}
 		} catch (e) {
 			// NOP.
 		}
 		try {
-			contents = contents.concat(this.readable.readdirSync(path, cred).filter((fPath: string) => !this.deletedFiles.has(`${path}/${fPath}`)));
+			for (const file of this.readable.readdirSync(path, cred)) {
+				if (this.deletedFiles.has(`${path}/${file}`)) {
+					continue;
+				}
+				contents.add(file);
+			}
 		} catch (e) {
 			// NOP.
 		}
-		const seenMap: { [name: string]: boolean } = {};
-		return contents.filter((path: string) => {
-			const result = !seenMap[path];
-			seenMap[path] = true;
-			return result;
-		});
+
+		return [...contents];
 	}
 
 	private async deletePath(path: string, cred: Cred): Promise<void> {
