@@ -16,7 +16,7 @@ async function fetchFile(path: string, type: 'buffer'): Promise<Uint8Array>;
 async function fetchFile<T extends object>(path: string, type: 'json'): Promise<T>;
 async function fetchFile<T extends object>(path: string, type: 'buffer' | 'json'): Promise<T | Uint8Array>;
 async function fetchFile<T extends object>(path: string, type: string): Promise<T | Uint8Array> {
-	const response = await fetch(path).catch((e: Error) => {
+	const response = await globalThis.fetch(path).catch((e: Error) => {
 		throw new ErrnoError(Errno.EIO, e.message);
 	});
 	if (!response.ok) {
@@ -75,7 +75,7 @@ export interface FetchOptions {
 export class FetchFS extends IndexFS {
 	public readonly baseUrl: string;
 
-	public async ready(): Promise<void> {
+	public override async ready(): Promise<void> {
 		if (this._isInitialized) {
 			return;
 		}
@@ -103,7 +103,7 @@ export class FetchFS extends IndexFS {
 		this.baseUrl = baseUrl;
 	}
 
-	public metadata(): FileSystemMetadata {
+	public override metadata(): FileSystemMetadata {
 		return {
 			...super.metadata(),
 			name: FetchFS.name,

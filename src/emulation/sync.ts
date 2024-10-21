@@ -192,7 +192,7 @@ function _readFileSync(fname: string, flag: string, resolveSymlinks: boolean): U
  * @returns file contents
  */
 export function readFileSync(path: fs.PathOrFileDescriptor, options?: { flag?: string } | null): Buffer;
-export function readFileSync(path: fs.PathOrFileDescriptor, options?: (fs.EncodingOption & { flag?: string }) | BufferEncoding | null): string;
+export function readFileSync(path: fs.PathOrFileDescriptor, options?: (fs.EncodingOption & { flag?: string }) | NodeJS.BufferEncoding | null): string;
 export function readFileSync(path: fs.PathOrFileDescriptor, _options: fs.WriteFileOptions | null = {}): FileContents {
 	const options = normalizeOptions(_options, null, 'r', 0o644);
 	const flag = parseFlag(options.flag);
@@ -213,8 +213,8 @@ readFileSync satisfies typeof fs.readFileSync;
  * @option flag Defaults to `'w'`.
  */
 export function writeFileSync(path: fs.PathOrFileDescriptor, data: FileContents, options?: fs.WriteFileOptions): void;
-export function writeFileSync(path: fs.PathOrFileDescriptor, data: FileContents, encoding?: BufferEncoding): void;
-export function writeFileSync(path: fs.PathOrFileDescriptor, data: FileContents, _options: fs.WriteFileOptions | BufferEncoding = {}): void {
+export function writeFileSync(path: fs.PathOrFileDescriptor, data: FileContents, encoding?: NodeJS.BufferEncoding): void;
+export function writeFileSync(path: fs.PathOrFileDescriptor, data: FileContents, _options: fs.WriteFileOptions | NodeJS.BufferEncoding = {}): void {
 	const options = normalizeOptions(_options, 'utf8', 'w+', 0o644);
 	const flag = parseFlag(options.flag);
 	if (!isWriteable(flag)) {
@@ -301,13 +301,13 @@ fdatasyncSync satisfies typeof fs.fdatasyncSync;
  * If position is null, the data will be written at the current position.
  */
 export function writeSync(fd: number, data: ArrayBufferView, offset?: number | null, length?: number | null, position?: number | null): number;
-export function writeSync(fd: number, data: string, position?: number | null, encoding?: BufferEncoding | null): number;
-export function writeSync(fd: number, data: FileContents, posOrOff?: number | null, lenOrEnc?: BufferEncoding | number | null, pos?: number | null): number {
+export function writeSync(fd: number, data: string, position?: number | null, encoding?: NodeJS.BufferEncoding | null): number;
+export function writeSync(fd: number, data: FileContents, posOrOff?: number | null, lenOrEnc?: NodeJS.BufferEncoding | number | null, pos?: number | null): number {
 	let buffer: Uint8Array, offset: number | undefined, length: number, position: number | null;
 	if (typeof data === 'string') {
 		// Signature 1: (fd, string, [position?, [encoding?]])
 		position = typeof posOrOff === 'number' ? posOrOff : null;
-		const encoding = typeof lenOrEnc === 'string' ? lenOrEnc : ('utf8' as BufferEncoding);
+		const encoding = typeof lenOrEnc === 'string' ? lenOrEnc : ('utf8' as NodeJS.BufferEncoding);
 		offset = 0;
 		buffer = Buffer.from(data, encoding);
 		length = buffer.byteLength;
@@ -433,13 +433,19 @@ export function mkdirSync(path: fs.PathLike, options?: fs.Mode | fs.MakeDirector
 }
 mkdirSync satisfies typeof fs.mkdirSync;
 
-export function readdirSync(path: fs.PathLike, options?: { recursive?: boolean; encoding?: BufferEncoding | null; withFileTypes?: false } | BufferEncoding | null): string[];
-export function readdirSync(path: fs.PathLike, options: { recursive?: boolean; encoding: 'buffer'; withFileTypes?: false } | 'buffer'): Buffer[];
-export function readdirSync(path: fs.PathLike, options: { recursive?: boolean; withFileTypes: true }): Dirent[];
-export function readdirSync(path: fs.PathLike, options?: (fs.ObjectEncodingOptions & { withFileTypes?: false; recursive?: boolean }) | BufferEncoding | null): string[] | Buffer[];
 export function readdirSync(
 	path: fs.PathLike,
-	options?: { recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null; withFileTypes?: boolean } | BufferEncoding | 'buffer' | null,
+	options?: { recursive?: boolean; encoding?: NodeJS.BufferEncoding | null; withFileTypes?: false } | NodeJS.BufferEncoding | null,
+): string[];
+export function readdirSync(path: fs.PathLike, options: { recursive?: boolean; encoding: 'buffer'; withFileTypes?: false } | 'buffer'): Buffer[];
+export function readdirSync(path: fs.PathLike, options: { recursive?: boolean; withFileTypes: true }): Dirent[];
+export function readdirSync(
+	path: fs.PathLike,
+	options?: (fs.ObjectEncodingOptions & { withFileTypes?: false; recursive?: boolean }) | NodeJS.BufferEncoding | null,
+): string[] | Buffer[];
+export function readdirSync(
+	path: fs.PathLike,
+	options?: { recursive?: boolean; encoding?: NodeJS.BufferEncoding | 'buffer' | null; withFileTypes?: boolean } | NodeJS.BufferEncoding | 'buffer' | null,
 ): string[] | Dirent[] | Buffer[] {
 	path = normalizePath(path);
 	const { fs, path: resolved } = resolveMount(existsSync(path) ? realpathSync(path) : path);
@@ -526,9 +532,9 @@ export function symlinkSync(target: fs.PathLike, path: fs.PathLike, type: fs.sym
 symlinkSync satisfies typeof fs.symlinkSync;
 
 export function readlinkSync(path: fs.PathLike, options?: fs.BufferEncodingOption): Buffer;
-export function readlinkSync(path: fs.PathLike, options: fs.EncodingOption | BufferEncoding): string;
-export function readlinkSync(path: fs.PathLike, options?: fs.EncodingOption | BufferEncoding | fs.BufferEncodingOption): Buffer | string;
-export function readlinkSync(path: fs.PathLike, options?: fs.EncodingOption | BufferEncoding | fs.BufferEncodingOption): Buffer | string {
+export function readlinkSync(path: fs.PathLike, options: fs.EncodingOption | NodeJS.BufferEncoding): string;
+export function readlinkSync(path: fs.PathLike, options?: fs.EncodingOption | NodeJS.BufferEncoding | fs.BufferEncodingOption): Buffer | string;
+export function readlinkSync(path: fs.PathLike, options?: fs.EncodingOption | NodeJS.BufferEncoding | fs.BufferEncodingOption): Buffer | string {
 	const value: Buffer = Buffer.from(_readFileSync(path.toString(), 'r', false));
 	const encoding = typeof options == 'object' ? options?.encoding : options;
 	if (encoding == 'buffer') {

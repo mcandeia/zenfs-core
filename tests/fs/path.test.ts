@@ -1,34 +1,32 @@
 import assert from 'node:assert';
-import { suite, test } from 'node:test';
+
 import { basename, dirname, extname, join, normalize, resolve } from '../../src/emulation/path.ts';
 
-suite('Path emulation', () => {
-	test('resolve', () => {
-		assert(resolve('somepath') === '/somepath');
-		assert(resolve('/another', 'path') === '/another/path');
-	});
+Deno.test('resolve', () => {
+	assert(resolve('somepath') === '/somepath');
+	assert(resolve('/another', 'path') === '/another/path');
+});
 
-	test('join', () => {
-		assert(join('/path', 'to', 'file.txt') === '/path/to/file.txt');
-		assert(join('/path/', 'to', '/file.txt') === '/path/to/file.txt');
-	});
+Deno.test('join', () => {
+	assert(join('/path', 'to', 'file.txt') === '/path/to/file.txt');
+	assert(join('/path/', 'to', '/file.txt') === '/path/to/file.txt');
+});
 
-	test('normalize', () => {
-		assert(normalize('/path/to/../file.txt') === '/path/file.txt');
-		assert(normalize('/path/to/./file.txt') === '/path/to/file.txt');
-	});
+Deno.test('normalize', () => {
+	assert(normalize('/path/to/../file.txt') === '/path/file.txt');
+	assert(normalize('/path/to/./file.txt') === '/path/to/file.txt');
+});
 
-	test('basename', () => {
-		assert(basename('/path/to/file.txt') === 'file.txt');
-		assert(basename('/path/to/file.txt', '.txt') === 'file');
-	});
+Deno.test('basename', () => {
+	assert(basename('/path/to/file.txt') === 'file.txt');
+	assert(basename('/path/to/file.txt', '.txt') === 'file');
+});
 
-	test('dirname', () => {
-		assert(dirname('/path/to/file.txt') === '/path/to');
-	});
+Deno.test('dirname', () => {
+	assert(dirname('/path/to/file.txt') === '/path/to');
+});
 
-	test('extname', () => {
-		assert(extname('/path/to/file.txt') === '.txt');
-		assert(extname('/path/to/file') === '');
-	});
+Deno.test('extname', () => {
+	assert(extname('/path/to/file.txt') === '.txt');
+	assert(extname('/path/to/file') === '');
 });

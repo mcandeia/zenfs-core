@@ -31,7 +31,7 @@ export function Readonly<T extends typeof FileSystem>(
 	}
 > {
 	abstract class ReadonlyFS extends FS {
-		public metadata(): FileSystemMetadata {
+		public override metadata(): FileSystemMetadata {
 			return { ...super.metadata(), readonly: true };
 		}
 

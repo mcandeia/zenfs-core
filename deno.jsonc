@@ -1,11 +1,11 @@
 {
 	"exclude": ["dist", "docs", "tmp"],
 	"compilerOptions": {
-		"module": "NodeNext",
-		"target": "ES2020",
 		"lib": [
 			"ESNext",
-			"ESNext.Disposable"
+			"ESNext.Disposable",
+			"Deno.ns",
+			"DOM"
 		],
 		"strict": true
 	},

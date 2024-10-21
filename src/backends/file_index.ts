@@ -52,7 +52,7 @@ export class Index extends Map<string, Stats> {
 	/**
 	 * Converts the index to a string
 	 */
-	public toString(): string {
+	public override toString(): string {
 		return JSON.stringify(this.toJSON());
 	}
 
@@ -109,7 +109,7 @@ export abstract class IndexFS extends Readonly(FileSystem) {
 
 	protected _isInitialized: boolean = false;
 
-	public async ready(): Promise<void> {
+	public override async ready(): Promise<void> {
 		await super.ready();
 		if (this._isInitialized) {
 			return;

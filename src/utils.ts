@@ -246,10 +246,10 @@ export function normalizePath(p: fs.PathLike): AbsolutePath {
  */
 export function normalizeOptions(
 	options: fs.WriteFileOptions | (fs.EncodingOption & { flag?: fs.OpenMode }) | undefined,
-	encoding: BufferEncoding | null = 'utf8',
+	encoding: NodeJS.BufferEncoding | null = 'utf8',
 	flag: string,
 	mode: number = 0,
-): { encoding?: BufferEncoding | null; flag: string; mode: number } {
+): { encoding?: NodeJS.BufferEncoding | null; flag: string; mode: number } {
 	if (typeof options != 'object' || options === null) {
 		return {
 			encoding: typeof options == 'string' ? options : encoding ?? null,

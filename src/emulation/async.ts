@@ -131,10 +131,10 @@ open satisfies Omit<typeof fs.open, '__promisify__'>;
  */
 export function readFile(filename: fs.PathLike, cb: Callback<[Uint8Array]>): void;
 export function readFile(filename: fs.PathLike, options: { flag?: string }, callback?: Callback<[Uint8Array]>): void;
-export function readFile(filename: fs.PathLike, options: { encoding: BufferEncoding; flag?: string } | BufferEncoding, cb: Callback<[string]>): void;
+export function readFile(filename: fs.PathLike, options: { encoding: NodeJS.BufferEncoding; flag?: string } | NodeJS.BufferEncoding, cb: Callback<[string]>): void;
 export function readFile(
 	filename: fs.PathLike,
-	options?: fs.WriteFileOptions | BufferEncoding | Callback<[Uint8Array]>,
+	options?: fs.WriteFileOptions | NodeJS.BufferEncoding | Callback<[Uint8Array]>,
 	cb: Callback<[string]> | Callback<[Uint8Array]> = nop,
 ) {
 	cb = typeof options === 'function' ? options : cb;
@@ -157,7 +157,7 @@ readFile satisfies Omit<typeof fs.readFile, '__promisify__'>;
  * @option flag Defaults to `'w'`.
  */
 export function writeFile(filename: fs.PathLike, data: FileContents, cb?: Callback): void;
-export function writeFile(filename: fs.PathLike, data: FileContents, encoding?: BufferEncoding, cb?: Callback): void;
+export function writeFile(filename: fs.PathLike, data: FileContents, encoding?: NodeJS.BufferEncoding, cb?: Callback): void;
 export function writeFile(filename: fs.PathLike, data: FileContents, options?: fs.WriteFileOptions, cb?: Callback): void;
 export function writeFile(filename: fs.PathLike, data: FileContents, cbEncOpts?: fs.WriteFileOptions | Callback, cb: Callback = nop): void {
 	cb = typeof cbEncOpts === 'function' ? cbEncOpts : cb;
@@ -178,7 +178,7 @@ writeFile satisfies Omit<typeof fs.writeFile, '__promisify__'>;
  */
 export function appendFile(filename: fs.PathLike, data: FileContents, cb?: Callback): void;
 export function appendFile(filename: fs.PathLike, data: FileContents, options?: fs.EncodingOption & { mode?: fs.Mode; flag?: fs.OpenMode }, cb?: Callback): void;
-export function appendFile(filename: fs.PathLike, data: FileContents, encoding?: BufferEncoding, cb?: Callback): void;
+export function appendFile(filename: fs.PathLike, data: FileContents, encoding?: NodeJS.BufferEncoding, cb?: Callback): void;
 export function appendFile(
 	filename: fs.PathLike,
 	data: FileContents,
@@ -264,16 +264,16 @@ export function write(fd: number, buffer: Uint8Array, offset: number, length: nu
 export function write(fd: number, buffer: Uint8Array, offset: number, length: number, position?: number, cb?: Callback<[number, Uint8Array]>): void;
 export function write(fd: number, data: FileContents, cb?: Callback<[number, string]>): void;
 export function write(fd: number, data: FileContents, position?: number, cb?: Callback<[number, string]>): void;
-export function write(fd: number, data: FileContents, position: number | null, encoding: BufferEncoding, cb?: Callback<[number, string]>): void;
+export function write(fd: number, data: FileContents, position: number | null, encoding: NodeJS.BufferEncoding, cb?: Callback<[number, string]>): void;
 export function write(
 	fd: number,
 	data: FileContents,
 	cbPosOff?: number | Callback<[number, string]> | null,
-	cbLenEnc?: number | BufferEncoding | Callback<[number, string]>,
-	cbPosEnc?: number | BufferEncoding | Callback<[number, Uint8Array]> | Callback<[number, string]>,
+	cbLenEnc?: number | NodeJS.BufferEncoding | Callback<[number, string]>,
+	cbPosEnc?: number | NodeJS.BufferEncoding | Callback<[number, Uint8Array]> | Callback<[number, string]>,
 	cb: Callback<[number, Uint8Array]> | Callback<[number, string]> = nop,
 ): void {
-	let buffer: Buffer, offset: number | undefined, length: number | undefined, position: number | undefined | null, encoding: BufferEncoding;
+	let buffer: Buffer, offset: number | undefined, length: number | undefined, position: number | undefined | null, encoding: NodeJS.BufferEncoding;
 	const handle = new promises.FileHandle(fd);
 	if (typeof data === 'string') {
 		// Signature 1: (fd, string, [position?, [encoding?]], cb?)
@@ -621,7 +621,7 @@ watch satisfies Omit<typeof fs.watch, '__promisify__'>;
 // From @types/node/fs (these types are not exported)
 interface StreamOptions {
 	flags?: string;
-	encoding?: BufferEncoding;
+	encoding?: NodeJS.BufferEncoding;
 	fd?: number | promises.FileHandle;
 	mode?: number;
 	autoClose?: boolean;
@@ -655,7 +655,7 @@ interface WriteStreamOptions extends StreamOptions {
  * @param options Options for the ReadStream and file opening (e.g., `encoding`, `highWaterMark`, `mode`).
  * @returns A ReadStream object for interacting with the file's contents.
  */
-export function createReadStream(path: fs.PathLike, options?: BufferEncoding | ReadStreamOptions): ReadStream {
+export function createReadStream(path: fs.PathLike, options?: NodeJS.BufferEncoding | ReadStreamOptions): ReadStream {
 	options = typeof options == 'object' ? options : { encoding: options };
 	let handle: promises.FileHandle;
 	const stream = new ReadStream({
@@ -695,12 +695,12 @@ createReadStream satisfies Omit<typeof fs.createReadStream, '__promisify__'>;
  * @param options Options for the WriteStream and file opening (e.g., `encoding`, `highWaterMark`, `mode`).
  * @returns A WriteStream object for writing to the file.
  */
-export function createWriteStream(path: fs.PathLike, options?: BufferEncoding | WriteStreamOptions): WriteStream {
+export function createWriteStream(path: fs.PathLike, options?: NodeJS.BufferEncoding | WriteStreamOptions): WriteStream {
 	options = typeof options == 'object' ? options : { encoding: options };
 	let handle: promises.FileHandle;
 	const stream = new WriteStream({
 		highWaterMark: options?.highWaterMark,
-		async write(chunk: Uint8Array, encoding: BufferEncoding, callback: (error?: Error) => void) {
+		async write(chunk: Uint8Array, encoding: NodeJS.BufferEncoding, callback: (error?: Error) => void) {
 			try {
 				handle ||= await promises.open(path, 'w', options?.mode || 0o666);
 				await handle.write(chunk, 0, encoding);
@@ -748,7 +748,11 @@ rm satisfies Omit<typeof fs.rm, '__promisify__'>;
 export function mkdtemp(prefix: string, callback: Callback<[string]>): void;
 export function mkdtemp(prefix: string, options: fs.EncodingOption, callback: Callback<[string]>): void;
 export function mkdtemp(prefix: string, options: fs.BufferEncodingOption, callback: Callback<[Buffer]>): void;
-export function mkdtemp(prefix: string, options: fs.EncodingOption | fs.BufferEncodingOption | Callback<[string]>, callback: Callback<[Buffer]> | Callback<[string]> = nop): void {
+export function mkdtemp(
+	prefix: string,
+	options: fs.EncodingOption | fs.BufferEncodingOption | Callback<[string]>,
+	callback: Callback<[Buffer]> | Callback<[string]> = nop,
+): void {
 	callback = typeof options === 'function' ? options : callback;
 	promises
 		.mkdtemp(prefix, typeof options != 'function' ? (options as fs.EncodingOption) : null)
