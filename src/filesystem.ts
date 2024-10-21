@@ -1,6 +1,6 @@
-import type { ErrnoError } from './error.js';
-import type { File } from './file.js';
-import { type Stats, ZenFsType } from './stats.js';
+import type { ErrnoError } from './error.ts';
+import type { File } from './file.ts';
+import { type Stats, ZenFsType } from './stats.ts';
 
 export type FileContents = ArrayBufferView | string;
 
@@ -93,7 +93,7 @@ export abstract class FileSystem {
 	 */
 	_disableSync?: boolean;
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+	// deno-lint-ignore no-explicit-any, no-unused-vars
 	public constructor(...args: any[]) {}
 
 	public async ready(): Promise<void> {}

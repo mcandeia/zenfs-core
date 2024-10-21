@@ -1,13 +1,13 @@
-import { credentials } from '../../credentials.js';
-import { S_IFDIR, S_IFREG } from '../../emulation/constants.js';
-import { basename, dirname, join, resolve } from '../../emulation/path.js';
-import { Errno, ErrnoError } from '../../error.js';
-import { PreloadFile } from '../../file.js';
-import { FileSystem, type FileSystemMetadata } from '../../filesystem.js';
-import { type Ino, Inode, randomIno, rootIno } from '../../inode.js';
-import type { FileType, Stats } from '../../stats.js';
-import { decodeDirListing, encode, encodeDirListing } from '../../utils.js';
-import type { Store, Transaction } from './store.js';
+import { credentials } from '../../credentials.ts';
+import { S_IFDIR, S_IFREG } from '../../emulation/constants.ts';
+import { basename, dirname, join, resolve } from '../../emulation/path.ts';
+import { Errno, ErrnoError } from '../../error.ts';
+import { PreloadFile } from '../../file.ts';
+import { FileSystem, type FileSystemMetadata } from '../../filesystem.ts';
+import { type Ino, Inode, randomIno, rootIno } from '../../inode.ts';
+import type { FileType, Stats } from '../../stats.ts';
+import { decodeDirListing, encode, encodeDirListing } from '../../utils.ts';
+import type { Store, Transaction } from './store.ts';
 
 const maxInodeAllocTries = 5;
 
@@ -22,7 +22,7 @@ const maxInodeAllocTries = 5;
 export class StoreFS<T extends Store = Store> extends FileSystem {
 	private _initialized: boolean = false;
 
-	public async ready(): Promise<void> {
+	public override async ready(): Promise<void> {
 		if (this._initialized) {
 			return;
 		}
@@ -34,7 +34,7 @@ export class StoreFS<T extends Store = Store> extends FileSystem {
 		super();
 	}
 
-	public metadata(): FileSystemMetadata {
+	public override metadata(): FileSystemMetadata {
 		return {
 			...super.metadata(),
 			name: this.store.name,

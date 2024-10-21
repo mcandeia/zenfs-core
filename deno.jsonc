@@ -7,5 +7,56 @@
 		"indentWidth": 4,
 		//"arrowParens": "avoid"
 		"exclude": ["docs", "dist", "tmp"]
+	},
+	"lint": {
+		"include": ["src", "tests"],
+		"exclude": ["tests/fixtures"],
+		"rules": {
+			"tags": ["recommended"],
+			"include": [
+				"no-useless-escape",
+				"no-unreachable",
+				"no-fallthrough",
+				"no-empty",
+				"no-case-declarations",
+				"prefer-const",
+				"prefer-rest-params",
+				"prefer-spread",
+
+				"no-unsafe-function-type",
+				"no-wrapper-object-types",
+				"triple-slash-reference",
+				"no-namespace",
+				"prefer-as-const",
+				"consistent-type-assertions",
+				"consistent-type-imports",
+				"no-unnecessary-type-assertion",
+				"no-unsafe-return",
+				"no-unsafe-assignment",
+				"no-unsafe-member-access",
+				"no-unsafe-argument",
+				"no-redundant-type-constituents",
+				"no-unsafe-call"
+			],
+			"exclude": [
+				"no-inferrable-types",
+				"no-this-alias",
+				"no-non-null-assertion",
+				"restrict-plus-operands",
+				// temporary
+				"require-await",
+				"no-explicit-any",
+				"no-unused-vars"
+			]
+		}
+	},
+	"compilerOptions": {
+		"module": "NodeNext",
+		"target": "ES2020",
+		"lib": [
+			"ESNext",
+			"ESNext.Disposable"
+		],
+		"strict": true
 	}
 }

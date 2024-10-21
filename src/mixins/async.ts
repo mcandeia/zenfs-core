@@ -1,9 +1,10 @@
-import { join } from '../emulation/path.js';
-import { Errno, ErrnoError } from '../error.js';
-import { type File, parseFlag, PreloadFile } from '../file.js';
-import type { FileSystem } from '../filesystem.js';
-import type { Stats } from '../stats.js';
-import type { AsyncFSMethods, Mixin } from './shared.js';
+import { setTimeout } from 'node:timers';
+import { join } from '../emulation/path.ts';
+import { Errno, ErrnoError } from '../error.ts';
+import { type File, parseFlag, PreloadFile } from '../file.ts';
+import type { FileSystem } from '../filesystem.ts';
+import type { Stats } from '../stats.ts';
+import type { AsyncFSMethods, Mixin } from './shared.ts';
 
 /** @internal */
 export type AsyncOperation = {
@@ -62,7 +63,7 @@ export function Async<T extends typeof FileSystem>(
 
 		abstract _sync?: FileSystem;
 
-		public async ready(): Promise<void> {
+		public override async ready(): Promise<void> {
 			await super.ready();
 			if (this._isInitialized || this._disableSync) {
 				return;
@@ -151,7 +152,7 @@ export function Async<T extends typeof FileSystem>(
 			this.queue('sync', path, data, stats);
 		}
 
-		public existsSync(path: string): boolean {
+		public override existsSync(path: string): boolean {
 			this.checkSync(path, 'exists');
 			return this._sync.existsSync(path);
 		}

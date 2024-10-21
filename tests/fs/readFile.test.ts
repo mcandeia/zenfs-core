@@ -1,14 +1,14 @@
 import assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { fs } from '../common.js';
+import { fs } from '../common.ts';
 
 suite('Reading', () => {
 	test('Cannot read a file with an invalid encoding', () => {
-		assert.throws(() => fs.readFileSync('a.js', 'wrongencoding' as BufferEncoding));
+		assert.throws(() => fs.readFileSync('a.ts', 'wrongencoding' as BufferEncoding));
 	});
 
 	test('Reading past the end of a file should not be an error', async () => {
-		const handle = await fs.promises.open('a.js', 'r');
+		const handle = await fs.promises.open('a.ts', 'r');
 		const { bytesRead } = await handle.read(new Uint8Array(10), 0, 10, 10000);
 		assert.strictEqual(bytesRead, 0);
 	});

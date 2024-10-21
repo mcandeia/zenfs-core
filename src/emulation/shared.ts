@@ -1,13 +1,13 @@
 // Utilities and shared data
 
 import type { BigIntStatsFs, StatsFs } from 'node:fs';
-import { InMemory } from '../backends/memory.js';
-import { Errno, ErrnoError } from '../error.js';
-import type { File } from '../file.js';
-import type { FileSystem } from '../filesystem.js';
-import { size_max } from '../inode.js';
-import { normalizePath } from '../utils.js';
-import { type AbsolutePath, resolve } from './path.js';
+import { InMemory } from '../backends/memory.ts';
+import { Errno, ErrnoError } from '../error.ts';
+import type { File } from '../file.ts';
+import type { FileSystem } from '../filesystem.ts';
+import { size_max } from '../inode.ts';
+import { normalizePath } from '../utils.ts';
+import { type AbsolutePath, resolve } from './path.ts';
 
 // descriptors
 export const fdMap: Map<number, File> = new Map();

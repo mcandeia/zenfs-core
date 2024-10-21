@@ -1,7 +1,7 @@
 import type { RequiredKeys } from 'utilium';
-import { Errno, ErrnoError } from '../error.js';
-import type { FileSystem } from '../filesystem.js';
-import { levenshtein } from '../utils.js';
+import { Errno, ErrnoError } from '../error.ts';
+import type { FileSystem } from '../filesystem.ts';
+import { levenshtein } from '../utils.ts';
 
 type OptionType = 'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function';
 
@@ -127,6 +127,7 @@ export async function checkOptions<T extends Backend>(backend: T, options: Recor
 			);
 		}
 		// Option provided, check type.
+		// deno-lint-ignore valid-typeof
 		const typeMatches = Array.isArray(opt.type) ? opt.type.indexOf(typeof providedValue) != -1 : typeof providedValue == opt.type;
 		if (!typeMatches) {
 			throw new ErrnoError(

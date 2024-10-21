@@ -1,6 +1,6 @@
-import { ErrnoError } from '../../error.js';
-import type { Ino } from '../../inode.js';
-import '../../polyfills.js';
+import { ErrnoError } from '../../error.ts';
+import type { Ino } from '../../inode.ts';
+import '../../polyfills.ts';
 
 /**
  * Represents a key-value store.
@@ -124,7 +124,6 @@ export abstract class Transaction<T extends Store = Store> {
  * Transaction that implements asynchronous operations with synchronous ones
  */
 export abstract class SyncTransaction<T extends Store = Store> extends Transaction<T> {
-	/* eslint-disable @typescript-eslint/require-await */
 	public async get(ino: Ino): Promise<Uint8Array> {
 		return this.getSync(ino);
 	}
@@ -144,7 +143,6 @@ export abstract class SyncTransaction<T extends Store = Store> extends Transacti
 	public async abort(): Promise<void> {
 		return this.abortSync();
 	}
-	/* eslint-enable @typescript-eslint/require-await */
 }
 
 /**

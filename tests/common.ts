@@ -1,7 +1,7 @@
-import { fs } from '../src/index.js';
-import { join, relative } from 'path';
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { Worker } from 'worker_threads';
+import { fs } from '../src/index.ts';
+import { join, relative } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { Worker } from 'node:worker_threads';
 
 export const fixturesDir = 'tests/fixtures/node';
 

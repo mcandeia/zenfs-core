@@ -1,13 +1,13 @@
-import { Errno, ErrnoError } from '../error.js';
-import type { File } from '../file.js';
-import type { FileSystem, FileSystemMetadata } from '../filesystem.js';
-import type { Stats } from '../stats.js';
-import type { Mixin } from './shared.js';
+import { Errno, ErrnoError } from '../error.ts';
+import type { File } from '../file.ts';
+import type { FileSystem, FileSystemMetadata } from '../filesystem.ts';
+import type { Stats } from '../stats.ts';
+import type { Mixin } from './shared.ts';
 
 /**
  * Implements the non-readonly methods to throw `EROFS`
  */
-/* eslint-disable @typescript-eslint/require-await */
+
 export function Readonly<T extends typeof FileSystem>(
 	FS: T,
 ): Mixin<
@@ -93,4 +93,3 @@ export function Readonly<T extends typeof FileSystem>(
 	}
 	return ReadonlyFS;
 }
-/* eslint-enable @typescript-eslint/require-await */

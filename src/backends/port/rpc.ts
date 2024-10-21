@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Errno, ErrnoError, type ErrnoErrorJSON } from '../../error.js';
-import type { Backend, FilesystemOf } from '../backend.js';
-import { handleRequest, PortFile, type PortFS } from './fs.js';
-import type { FileOrFSRequest } from './fs.js';
+import { setTimeout } from 'node:timers';
+import { Errno, ErrnoError, type ErrnoErrorJSON } from '../../error.ts';
+import type { Backend, FilesystemOf } from '../backend.ts';
+import { handleRequest, PortFile, type PortFS } from './fs.ts';
+import type { FileOrFSRequest } from './fs.ts';
 
 type _MessageEvent<T = any> = T | { data: T };
 
@@ -63,7 +63,7 @@ function isFileData(value: unknown): value is FileData {
 	return typeof value == 'object' && value != null && 'fd' in value && 'path' in value && 'position' in value;
 }
 
-export { FileData as File };
+export type { FileData as File };
 
 // general types
 

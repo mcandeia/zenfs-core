@@ -1,11 +1,13 @@
 import { EventEmitter } from 'eventemitter3';
 import type { EventEmitter as NodeEventEmitter } from 'node:events';
 import type * as fs from 'node:fs';
-import { ErrnoError } from '../error.js';
-import { isStatsEqual, type Stats } from '../stats.js';
-import { normalizePath } from '../utils.js';
-import { basename, dirname } from './path.js';
-import { statSync } from './sync.js';
+import { ErrnoError } from '../error.ts';
+import { isStatsEqual, type Stats } from '../stats.ts';
+import { normalizePath } from '../utils.ts';
+import { basename, dirname } from './path.ts';
+import { statSync } from './sync.ts';
+import type { Buffer } from 'node:buffer';
+import { clearInterval, setInterval } from 'node:timers';
 
 /**
  * Base class for file system watchers.
@@ -14,15 +16,13 @@ import { statSync } from './sync.js';
  * @template TEvents The type of events emitted by the watcher.
  */
 class Watcher<TEvents extends Record<string, unknown[]> = Record<string, unknown[]>> extends EventEmitter<TEvents> implements NodeEventEmitter {
-	/* eslint-disable @typescript-eslint/no-explicit-any */
-	public off<T extends EventEmitter.EventNames<TEvents>>(event: T, fn?: (...args: any[]) => void, context?: any, once?: boolean): this {
+	public override off<T extends EventEmitter.EventNames<TEvents>>(event: T, fn?: (...args: any[]) => void, context?: any, once?: boolean): this {
 		return super.off<T>(event, fn as EventEmitter.EventListener<TEvents, T>, context, once);
 	}
 
-	public removeListener<T extends EventEmitter.EventNames<TEvents>>(event: T, fn?: (...args: any[]) => void, context?: any, once?: boolean): this {
+	public override removeListener<T extends EventEmitter.EventNames<TEvents>>(event: T, fn?: (...args: any[]) => void, context?: any, once?: boolean): this {
 		return super.removeListener<T>(event, fn as EventEmitter.EventListener<TEvents, T>, context, once);
 	}
-	/* eslint-enable @typescript-eslint/no-explicit-any */
 
 	public constructor(public readonly path: string) {
 		super();

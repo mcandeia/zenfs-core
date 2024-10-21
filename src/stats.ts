@@ -1,7 +1,7 @@
-import type * as Node from 'fs';
-import { type Credentials, credentials } from './credentials.js';
-import { S_IFBLK, S_IFCHR, S_IFDIR, S_IFIFO, S_IFLNK, S_IFMT, S_IFREG, S_IFSOCK, S_IRWXG, S_IRWXO, S_IRWXU } from './emulation/constants.js';
-import { size_max } from './inode.js';
+import type * as Node from 'node:fs';
+import { type Credentials, credentials } from './credentials.ts';
+import { S_IFBLK, S_IFCHR, S_IFDIR, S_IFIFO, S_IFLNK, S_IFMT, S_IFREG, S_IFSOCK, S_IRWXG, S_IRWXO, S_IRWXU } from './emulation/constants.ts';
+import { size_max } from './inode.ts';
 
 /**
  * Indicates the type of a file. Applied to 'mode'.

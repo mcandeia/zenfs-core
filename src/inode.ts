@@ -1,4 +1,4 @@
-import { Stats, type StatsLike } from './stats.js';
+import { Stats, type StatsLike } from './stats.ts';
 import { deserialize, serialize, sizeof, struct, types as t } from 'utilium';
 
 /**

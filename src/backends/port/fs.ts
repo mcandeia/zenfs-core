@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FileReadResult } from 'node:fs/promises';
 import type { ExtractProperties } from 'utilium';
-import { type MountConfiguration, resolveMountConfig } from '../../config.js';
-import { Errno, ErrnoError } from '../../error.js';
-import { File } from '../../file.js';
-import { FileSystem, type FileSystemMetadata } from '../../filesystem.js';
-import { Async } from '../../mixins/async.js';
-import { type FileType, Stats } from '../../stats.js';
-import type { Backend, FilesystemOf } from '../backend.js';
-import { InMemory } from '../memory.js';
-import * as RPC from './rpc.js';
+import { type MountConfiguration, resolveMountConfig } from '../../config.ts';
+import { Errno, ErrnoError } from '../../error.ts';
+import { File } from '../../file.ts';
+import { FileSystem, type FileSystemMetadata } from '../../filesystem.ts';
+import { Async } from '../../mixins/async.ts';
+import { type FileType, Stats } from '../../stats.ts';
+import type { Backend, FilesystemOf } from '../backend.ts';
+import { InMemory } from '../memory.ts';
+import * as RPC from './rpc.ts';
 
 type FileMethods = Omit<ExtractProperties<File, (...args: any[]) => Promise<any>>, typeof Symbol.asyncDispose>;
 type FileMethod = keyof FileMethods;
@@ -23,7 +22,7 @@ export interface FileRequest<TMethod extends FileMethod = FileMethod> extends RP
 
 export class PortFile extends File {
 	public constructor(
-		public fs: PortFS,
+		public override fs: PortFS,
 		public readonly fd: number,
 		path: string,
 		public position: number,
@@ -150,7 +149,7 @@ export class PortFS extends Async(FileSystem) {
 	/**
 	 * @hidden
 	 */
-	_sync = InMemory.create({ name: 'port-tmpfs' });
+	override _sync = InMemory.create({ name: 'port-tmpfs' });
 
 	/**
 	 * Constructs a new PortFS instance that connects with the FS running on `options.port`.
@@ -161,7 +160,7 @@ export class PortFS extends Async(FileSystem) {
 		RPC.attach<RPC.Response>(this.port, RPC.handleResponse);
 	}
 
-	public metadata(): FileSystemMetadata {
+	public override metadata(): FileSystemMetadata {
 		return {
 			...super.metadata(),
 			name: 'PortFS',
@@ -179,7 +178,7 @@ export class PortFS extends Async(FileSystem) {
 		);
 	}
 
-	public async ready(): Promise<void> {
+	public override async ready(): Promise<void> {
 		await this.rpc('ready');
 		await super.ready();
 	}
@@ -220,7 +219,7 @@ export class PortFS extends Async(FileSystem) {
 		return this.rpc('readdir', path);
 	}
 
-	public exists(path: string): Promise<boolean> {
+	public override exists(path: string): Promise<boolean> {
 		return this.rpc('exists', path);
 	}
 
@@ -260,7 +259,7 @@ export async function handleRequest(port: RPC.Port, fs: FileSystem, request: Fil
 					};
 				}
 				break;
-			case 'file':
+			case 'file': {
 				const { fd } = request;
 				if (!descriptors.has(fd)) {
 					throw new ErrnoError(Errno.EBADF);
@@ -271,6 +270,7 @@ export async function handleRequest(port: RPC.Port, fs: FileSystem, request: Fil
 					descriptors.delete(fd);
 				}
 				break;
+			}
 			default:
 				return;
 		}
@@ -321,7 +321,6 @@ const _Port = {
 	},
 } satisfies Backend<PortFS, RPC.Options>;
 type _Port = typeof _Port;
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Port extends _Port {}
 export const Port: Port = _Port;
 

@@ -1,16 +1,16 @@
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import type * as fs from 'node:fs';
-import { Errno, ErrnoError } from '../error.js';
-import type { FileContents } from '../filesystem.js';
-import { BigIntStats, type Stats } from '../stats.js';
-import { type Callback, normalizeMode, normalizePath } from '../utils.js';
-import { R_OK } from './constants.js';
-import type { Dirent } from './dir.js';
-import type { Dir } from './dir.js';
-import * as promises from './promises.js';
-import { fd2file } from './shared.js';
-import { ReadStream, WriteStream } from './streams.js';
-import { FSWatcher, StatWatcher } from './watchers.js';
+import { Errno, ErrnoError } from '../error.ts';
+import type { FileContents } from '../filesystem.ts';
+import { BigIntStats, type Stats } from '../stats.ts';
+import { type Callback, normalizeMode, normalizePath } from '../utils.ts';
+import { R_OK } from './constants.ts';
+import type { Dirent } from './dir.ts';
+import type { Dir } from './dir.ts';
+import * as promises from './promises.ts';
+import { fd2file } from './shared.ts';
+import { ReadStream, WriteStream } from './streams.ts';
+import { FSWatcher, StatWatcher } from './watchers.ts';
 
 const nop = () => {};
 
@@ -132,7 +132,11 @@ open satisfies Omit<typeof fs.open, '__promisify__'>;
 export function readFile(filename: fs.PathLike, cb: Callback<[Uint8Array]>): void;
 export function readFile(filename: fs.PathLike, options: { flag?: string }, callback?: Callback<[Uint8Array]>): void;
 export function readFile(filename: fs.PathLike, options: { encoding: BufferEncoding; flag?: string } | BufferEncoding, cb: Callback<[string]>): void;
-export function readFile(filename: fs.PathLike, options?: fs.WriteFileOptions | BufferEncoding | Callback<[Uint8Array]>, cb: Callback<[string]> | Callback<[Uint8Array]> = nop) {
+export function readFile(
+	filename: fs.PathLike,
+	options?: fs.WriteFileOptions | BufferEncoding | Callback<[Uint8Array]>,
+	cb: Callback<[string]> | Callback<[Uint8Array]> = nop,
+) {
 	cb = typeof options === 'function' ? options : cb;
 
 	promises

@@ -1,10 +1,10 @@
 import type { FileReadResult } from 'node:fs/promises';
-import { O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY, S_IFMT } from './emulation/constants.js';
-import { Errno, ErrnoError } from './error.js';
-import type { FileSystem } from './filesystem.js';
-import { size_max } from './inode.js';
-import { type FileType, Stats } from './stats.js';
-import './polyfills.js';
+import { O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY, S_IFMT } from './emulation/constants.ts';
+import { Errno, ErrnoError } from './error.ts';
+import type { FileSystem } from './filesystem.ts';
+import { size_max } from './inode.ts';
+import { type FileType, Stats } from './stats.ts';
+import './polyfills.ts';
 
 /**
 	Typescript does not include a type declaration for resizable array buffers.
@@ -294,7 +294,7 @@ export class PreloadFile<FS extends FileSystem> extends File {
 		 * The file system that created the file.
 		 * @internal
 		 */
-		public fs: FS,
+		public override fs: FS,
 		path: string,
 		public readonly flag: string,
 		public readonly stats: Stats,
@@ -635,11 +635,11 @@ export class PreloadFile<FS extends FileSystem> extends File {
 		this.syncSync();
 	}
 
-	public async [Symbol.asyncDispose]() {
+	public override async [Symbol.asyncDispose]() {
 		await this.close();
 	}
 
-	public [Symbol.dispose]() {
+	public override [Symbol.dispose]() {
 		this.closeSync();
 	}
 }
@@ -648,15 +648,15 @@ export class PreloadFile<FS extends FileSystem> extends File {
  * For the file systems which do not sync to anything.
  */
 export class NoSyncFile<T extends FileSystem> extends PreloadFile<T> {
-	public sync(): Promise<void> {
+	public override sync(): Promise<void> {
 		return Promise.resolve();
 	}
 
-	public syncSync(): void {}
+	public override syncSync(): void {}
 
-	public close(): Promise<void> {
+	public override close(): Promise<void> {
 		return Promise.resolve();
 	}
 
-	public closeSync(): void {}
+	public override closeSync(): void {}
 }

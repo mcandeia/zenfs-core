@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 	Code shared by various mixins
 */
 
 import type { ExtractProperties } from 'utilium';
-import type { FileSystem } from '../filesystem.js';
+import type { FileSystem } from '../filesystem.ts';
 
 /**
  * `TBase` with `TMixin` mixed-in.

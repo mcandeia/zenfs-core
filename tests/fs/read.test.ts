@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { fs } from '../common.js';
+import { fs } from '../common.ts';
+import { Buffer } from 'node:buffer';
 
 const filepath: string = 'x.txt';
 const expected: string = 'xyz\n';

@@ -1,15 +1,15 @@
-import type { File } from '../file.js';
-import type { FileSystem } from '../filesystem.js';
-import type { Stats } from '../stats.js';
-import type { AsyncFSMethods, Mixin } from './shared.js';
+import type { File } from '../file.ts';
+import type { FileSystem } from '../filesystem.ts';
+import type { Stats } from '../stats.ts';
+import type { AsyncFSMethods, Mixin } from './shared.ts';
 
 /**
  * Implements the asynchronous API in terms of the synchronous API.
  */
-/* eslint-disable @typescript-eslint/require-await */
+
 export function Sync<T extends typeof FileSystem>(FS: T): Mixin<T, AsyncFSMethods> {
 	abstract class SyncFS extends FS implements AsyncFSMethods {
-		public async exists(path: string): Promise<boolean> {
+		public override async exists(path: string): Promise<boolean> {
 			return this.existsSync(path);
 		}
 
@@ -55,4 +55,3 @@ export function Sync<T extends typeof FileSystem>(FS: T): Mixin<T, AsyncFSMethod
 	}
 	return SyncFS;
 }
-/* eslint-enable @typescript-eslint/require-await */

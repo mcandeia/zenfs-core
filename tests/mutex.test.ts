@@ -1,9 +1,10 @@
 import { wait } from 'utilium';
-import { Mutexed } from '../src/mixins/mutexed.js';
-import { StoreFS } from '../src/backends/store/fs.js';
-import { InMemoryStore } from '../src/backends/memory.js';
+import { Mutexed } from '../src/mixins/mutexed.ts';
+import { StoreFS } from '../src/backends/store/fs.ts';
+import { InMemoryStore } from '../src/backends/memory.ts';
 import { suite, test } from 'node:test';
 import assert from 'node:assert';
+import type { MutexLock } from '../src/index.ts';
 
 suite('LockFS mutex', () => {
 	const fs = new (Mutexed(StoreFS))(new InMemoryStore('test'));
@@ -20,11 +21,11 @@ suite('LockFS mutex', () => {
 		let lock1Resolved = false;
 		let lock2Resolved = false;
 
-		const lock1 = fs.lock('/queued', 'test').then((lock) => {
+		const lock1 = fs.lock('/queued', 'test').then((lock: MutexLock) => {
 			lock1Resolved = true;
 			lock.unlock();
 		});
-		const lock2 = fs.lock('/queued', 'test').then((lock) => {
+		const lock2 = fs.lock('/queued', 'test').then((lock: MutexLock) => {
 			lock2Resolved = true;
 			lock.unlock();
 		});

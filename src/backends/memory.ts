@@ -1,7 +1,7 @@
-import type { Ino } from '../inode.js';
-import type { Backend } from './backend.js';
-import { StoreFS } from './store/fs.js';
-import { type SimpleSyncStore, SimpleTransaction } from './store/simple.js';
+import type { Ino } from '../inode.ts';
+import type { Backend } from './backend.ts';
+import { StoreFS } from './store/fs.ts';
+import { type SimpleSyncStore, SimpleTransaction } from './store/simple.ts';
 
 /**
  * A simple in-memory store
@@ -45,6 +45,5 @@ const _InMemory = {
 	},
 } as const satisfies Backend<StoreFS<InMemoryStore>, { name?: string }>;
 type _InMemory = typeof _InMemory;
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface InMemory extends _InMemory {}
 export const InMemory: InMemory = _InMemory;

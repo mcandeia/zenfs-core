@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { ErrnoError } from '../../src/error.js';
-import { fs } from '../common.js';
+import { ErrnoError } from '../../src/error.ts';
+import { fs } from '../common.ts';
 
 suite('Directory', () => {
 	test('mkdir', async () => {
@@ -71,7 +71,7 @@ suite('Directory', () => {
 		let wasThrown = false;
 
 		try {
-			fs.readdirSync('a.js');
+			fs.readdirSync('a.ts');
 		} catch (error: any) {
 			assert(error instanceof ErrnoError);
 			wasThrown = true;
@@ -82,7 +82,7 @@ suite('Directory', () => {
 
 	test('readdir on file', async () => {
 		try {
-			await fs.promises.readdir('a.js');
+			await fs.promises.readdir('a.ts');
 		} catch (error: any) {
 			assert(error instanceof ErrnoError);
 			assert(error.code === 'ENOTDIR');

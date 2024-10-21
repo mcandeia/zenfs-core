@@ -1,13 +1,13 @@
-import { dirname } from '../emulation/path.js';
-import { Errno, ErrnoError } from '../error.js';
-import type { File } from '../file.js';
-import { parseFlag, PreloadFile } from '../file.js';
-import type { FileSystemMetadata } from '../filesystem.js';
-import { FileSystem } from '../filesystem.js';
-import { Mutexed } from '../mixins/mutexed.js';
-import { Stats } from '../stats.js';
-import { decode, encode } from '../utils.js';
-import type { Backend } from './backend.js';
+import { dirname } from '../emulation/path.ts';
+import { Errno, ErrnoError } from '../error.ts';
+import type { File } from '../file.ts';
+import { parseFlag, PreloadFile } from '../file.ts';
+import type { FileSystemMetadata } from '../filesystem.ts';
+import { FileSystem } from '../filesystem.ts';
+import { Mutexed } from '../mixins/mutexed.ts';
+import { Stats } from '../stats.ts';
+import { decode, encode } from '../utils.ts';
+import type { Backend } from './backend.ts';
 /** @internal */
 const deletionLogPath = '/.deleted';
 
@@ -34,7 +34,7 @@ export interface OverlayOptions {
  * @internal
  */
 export class UnmutexedOverlayFS extends FileSystem {
-	async ready(): Promise<void> {
+	override async ready(): Promise<void> {
 		await this.readable.ready();
 		await this.writable.ready();
 		await this._ready;
@@ -65,7 +65,7 @@ export class UnmutexedOverlayFS extends FileSystem {
 		this._ready = this._initialize();
 	}
 
-	public metadata(): FileSystemMetadata {
+	public override metadata(): FileSystemMetadata {
 		return {
 			...super.metadata(),
 			name: OverlayFS.name,
@@ -563,6 +563,5 @@ const _Overlay = {
 	},
 } as const satisfies Backend<OverlayFS, OverlayOptions>;
 type _Overlay = typeof _Overlay;
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Overlay extends _Overlay {}
 export const Overlay: Overlay = _Overlay;
