@@ -1,12 +1,22 @@
 {
+	"exclude": ["dist", "docs", "tmp"],
+	"compilerOptions": {
+		"module": "NodeNext",
+		"target": "ES2020",
+		"lib": [
+			"ESNext",
+			"ESNext.Disposable"
+		],
+		"strict": true
+	},
+
 	"fmt": {
 		"singleQuote": true,
 		"useTabs": true,
 		"lineWidth": 180,
 		"proseWrap": "preserve",
-		"indentWidth": 4,
+		"indentWidth": 4
 		//"arrowParens": "avoid"
-		"exclude": ["docs", "dist", "tmp"]
 	},
 	"lint": {
 		"include": ["src", "tests"],
@@ -22,7 +32,6 @@
 				"prefer-const",
 				"prefer-rest-params",
 				"prefer-spread",
-
 				"no-unsafe-function-type",
 				"no-wrapper-object-types",
 				"triple-slash-reference",
@@ -49,14 +58,5 @@
 				"no-unused-vars"
 			]
 		}
-	},
-	"compilerOptions": {
-		"module": "NodeNext",
-		"target": "ES2020",
-		"lib": [
-			"ESNext",
-			"ESNext.Disposable"
-		],
-		"strict": true
 	}
 }
