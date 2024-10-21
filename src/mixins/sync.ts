@@ -1,7 +1,7 @@
 import type { File } from '../file.js';
 import type { FileSystem } from '../filesystem.js';
 import type { Stats } from '../stats.js';
-import type { Mixin, AsyncFSMethods } from './shared.js';
+import type { AsyncFSMethods, Mixin } from './shared.js';
 
 /**
  * Implements the asynchronous API in terms of the synchronous API.

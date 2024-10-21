@@ -7,7 +7,7 @@ import type { File } from '../file.js';
 import type { FileSystem } from '../filesystem.js';
 import { size_max } from '../inode.js';
 import { normalizePath } from '../utils.js';
-import { resolve, type AbsolutePath } from './path.js';
+import { type AbsolutePath, resolve } from './path.js';
 
 // descriptors
 export const fdMap: Map<number, File> = new Map();

@@ -13,7 +13,7 @@ export class Dirent implements _Dirent {
 
 	public constructor(
 		public path: string,
-		protected stats: Stats
+		protected stats: Stats,
 	) {}
 
 	get parentPath(): string {
@@ -102,7 +102,7 @@ export class Dir implements _Dir {
 			return this._read();
 		}
 
-		void this._read().then(value => cb(undefined, value));
+		void this._read().then((value) => cb(undefined, value));
 	}
 
 	/**

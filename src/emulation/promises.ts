@@ -19,7 +19,7 @@ import { Dir, Dirent } from './dir.js';
 import { dirname, join, parse } from './path.js';
 import { _statfs, fd2file, fdMap, file2fd, fixError, mounts, resolveMount } from './shared.js';
 import { ReadStream, WriteStream } from './streams.js';
-import { FSWatcher, emitChange } from './watchers.js';
+import { emitChange, FSWatcher } from './watchers.js';
 export * as constants from './constants.js';
 
 export class FileHandle implements promises.FileHandle {
@@ -235,7 +235,7 @@ export class FileHandle implements promises.FileHandle {
 		data: FileContents,
 		posOrOff?: number | null,
 		lenOrEnc?: BufferEncoding | number,
-		position?: number | null
+		position?: number | null,
 	): Promise<{ bytesWritten: number; buffer: FileContents }>;
 	public async write<TBuffer extends Uint8Array>(buffer: TBuffer, offset?: number, length?: number, position?: number): Promise<{ bytesWritten: number; buffer: TBuffer }>;
 	public async write(data: string, position?: number, encoding?: BufferEncoding): Promise<{ bytesWritten: number; buffer: string }>;
@@ -243,7 +243,7 @@ export class FileHandle implements promises.FileHandle {
 		data: FileContents,
 		posOrOff?: number,
 		lenOrEnc?: BufferEncoding | number,
-		position?: number | null
+		position?: number | null,
 	): Promise<{ bytesWritten: number; buffer: FileContents }> {
 		let buffer: Uint8Array, offset: number | null | undefined, length: number;
 		if (typeof data === 'string') {
@@ -553,11 +553,11 @@ export async function readFile(path: fs.PathLike | promises.FileHandle, options?
 export async function readFile(path: fs.PathLike | promises.FileHandle, options: { encoding: BufferEncoding; flag?: fs.OpenMode } | BufferEncoding): Promise<string>;
 export async function readFile(
 	path: fs.PathLike | promises.FileHandle,
-	options?: (fs.ObjectEncodingOptions & { flag?: fs.OpenMode }) | BufferEncoding | null
+	options?: (fs.ObjectEncodingOptions & { flag?: fs.OpenMode }) | BufferEncoding | null,
 ): Promise<string | Buffer>;
 export async function readFile(
 	path: fs.PathLike | promises.FileHandle,
-	_options?: (fs.ObjectEncodingOptions & { flag?: fs.OpenMode }) | BufferEncoding | null
+	_options?: (fs.ObjectEncodingOptions & { flag?: fs.OpenMode }) | BufferEncoding | null,
 ): Promise<Buffer | string> {
 	const options = normalizeOptions(_options, null, 'r', 0o644);
 	await using handle: FileHandle | promises.FileHandle = typeof path == 'object' && 'fd' in path ? path : await open(path as string, options.flag, options.mode);
@@ -576,7 +576,7 @@ readFile satisfies typeof promises.readFile;
 export async function writeFile(
 	path: fs.PathLike | promises.FileHandle,
 	data: FileContents | Stream | Iterable<string | ArrayBufferView> | AsyncIterable<string | ArrayBufferView>,
-	_options?: (fs.ObjectEncodingOptions & { mode?: fs.Mode; flag?: fs.OpenMode; flush?: boolean }) | BufferEncoding | null
+	_options?: (fs.ObjectEncodingOptions & { mode?: fs.Mode; flag?: fs.OpenMode; flush?: boolean }) | BufferEncoding | null,
 ): Promise<void> {
 	const options = normalizeOptions(_options, 'utf8', 'w+', 0o644);
 	await using handle = path instanceof FileHandle ? path : await open((path as fs.PathLike).toString(), options.flag, options.mode);
@@ -598,7 +598,7 @@ writeFile satisfies typeof promises.writeFile;
 export async function appendFile(
 	path: fs.PathLike | promises.FileHandle,
 	data: FileContents,
-	_options?: BufferEncoding | (fs.EncodingOption & { mode?: fs.Mode; flag?: fs.OpenMode }) | null
+	_options?: BufferEncoding | (fs.EncodingOption & { mode?: fs.Mode; flag?: fs.OpenMode }) | null,
 ): Promise<void> {
 	const options = normalizeOptions(_options, 'utf8', 'a', 0o644);
 	const flag = parseFlag(options.flag);
@@ -689,12 +689,12 @@ export async function readdir(path: fs.PathLike, options?: (fs.ObjectEncodingOpt
 export async function readdir(path: fs.PathLike, options: fs.BufferEncodingOption & { withFileTypes?: false; recursive?: boolean }): Promise<Buffer[]>;
 export async function readdir(
 	path: fs.PathLike,
-	options?: (fs.ObjectEncodingOptions & { withFileTypes?: false; recursive?: boolean }) | BufferEncoding | null
+	options?: (fs.ObjectEncodingOptions & { withFileTypes?: false; recursive?: boolean }) | BufferEncoding | null,
 ): Promise<string[] | Buffer[]>;
 export async function readdir(path: fs.PathLike, options: fs.ObjectEncodingOptions & { withFileTypes: true; recursive?: boolean }): Promise<Dirent[]>;
 export async function readdir(
 	path: fs.PathLike,
-	options?: { withFileTypes?: boolean; recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null } | BufferEncoding | 'buffer' | null
+	options?: { withFileTypes?: boolean; recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null } | BufferEncoding | 'buffer' | null,
 ): Promise<string[] | Dirent[] | Buffer[]> {
 	path = normalizePath(path);
 	if (!(await stat(path)).hasAccess(constants.R_OK)) {

@@ -3,7 +3,7 @@ import type * as fs from 'node:fs';
 import { Errno, ErrnoError } from '../error.js';
 import type { FileContents } from '../filesystem.js';
 import { BigIntStats, type Stats } from '../stats.js';
-import { normalizeMode, normalizePath, type Callback } from '../utils.js';
+import { type Callback, normalizeMode, normalizePath } from '../utils.js';
 import { R_OK } from './constants.js';
 import type { Dirent } from './dir.js';
 import type { Dir } from './dir.js';
@@ -46,7 +46,7 @@ export function stat(path: fs.PathLike, options?: fs.StatOptions | Callback<[Sta
 	callback = typeof options == 'function' ? options : callback;
 	promises
 		.stat(path, typeof options != 'function' ? options : {})
-		.then(stats => (callback as Callback<[Stats] | [BigIntStats]>)(undefined, stats as any))
+		.then((stats) => (callback as Callback<[Stats] | [BigIntStats]>)(undefined, stats as any))
 		.catch(callback);
 }
 stat satisfies Omit<typeof fs.stat, '__promisify__'>;
@@ -64,7 +64,7 @@ export function lstat(path: fs.PathLike, options?: fs.StatOptions | Callback<[St
 	callback = typeof options == 'function' ? options : callback;
 	promises
 		.lstat(path, typeof options != 'function' ? options : ({} as object))
-		.then(stats => (callback as Callback<[Stats] | [BigIntStats]>)(undefined, stats))
+		.then((stats) => (callback as Callback<[Stats] | [BigIntStats]>)(undefined, stats))
 		.catch(callback);
 }
 lstat satisfies Omit<typeof fs.lstat, '__promisify__'>;
@@ -118,7 +118,7 @@ export function open(path: fs.PathLike, flag: string, cbMode?: number | string |
 	cb = typeof cbMode === 'function' ? cbMode : cb;
 	promises
 		.open(path, flag, mode)
-		.then(handle => cb(undefined, handle.fd))
+		.then((handle) => cb(undefined, handle.fd))
 		.catch(cb);
 }
 open satisfies Omit<typeof fs.open, '__promisify__'>;
@@ -137,7 +137,7 @@ export function readFile(filename: fs.PathLike, options?: fs.WriteFileOptions | 
 
 	promises
 		.readFile(filename, typeof options === 'function' ? null : options)
-		.then(data => (cb as Callback<[string | Uint8Array]>)(undefined, data))
+		.then((data) => (cb as Callback<[string | Uint8Array]>)(undefined, data))
 		.catch(cb);
 }
 readFile satisfies Omit<typeof fs.readFile, '__promisify__'>;
@@ -179,7 +179,7 @@ export function appendFile(
 	filename: fs.PathLike,
 	data: FileContents,
 	cbEncOpts?: (fs.EncodingOption & { mode?: fs.Mode; flag?: fs.OpenMode }) | Callback,
-	cb: Callback = nop
+	cb: Callback = nop,
 ): void {
 	const optionsOrEncoding = typeof cbEncOpts != 'function' ? cbEncOpts : undefined;
 	cb = typeof cbEncOpts === 'function' ? cbEncOpts : cb;
@@ -202,7 +202,7 @@ export function fstat(fd: number, options?: fs.StatOptions | Callback<[Stats]>, 
 
 	fd2file(fd)
 		.stat()
-		.then(stats => (cb as Callback<[Stats | BigIntStats]>)(undefined, typeof options == 'object' && options?.bigint ? new BigIntStats(stats) : stats))
+		.then((stats) => (cb as Callback<[Stats | BigIntStats]>)(undefined, typeof options == 'object' && options?.bigint ? new BigIntStats(stats) : stats))
 		.catch(cb);
 }
 fstat satisfies Omit<typeof fs.fstat, '__promisify__'>;
@@ -267,7 +267,7 @@ export function write(
 	cbPosOff?: number | Callback<[number, string]> | null,
 	cbLenEnc?: number | BufferEncoding | Callback<[number, string]>,
 	cbPosEnc?: number | BufferEncoding | Callback<[number, Uint8Array]> | Callback<[number, string]>,
-	cb: Callback<[number, Uint8Array]> | Callback<[number, string]> = nop
+	cb: Callback<[number, Uint8Array]> | Callback<[number, string]> = nop,
 ): void {
 	let buffer: Buffer, offset: number | undefined, length: number | undefined, position: number | undefined | null, encoding: BufferEncoding;
 	const handle = new promises.FileHandle(fd);
@@ -393,8 +393,7 @@ export function readdir(path: fs.PathLike, _options: { withFileTypes?: boolean }
 	const options = typeof _options != 'function' ? _options : {};
 	promises
 		.readdir(path, options as object)
-
-		.then(entries => cb(undefined, entries as any))
+		.then((entries) => cb(undefined, entries as any))
 		.catch(cb);
 }
 readdir satisfies Omit<typeof fs.readdir, '__promisify__'>;
@@ -432,12 +431,12 @@ export function readlink(path: fs.PathLike, options: fs.EncodingOption, callback
 export function readlink(
 	path: fs.PathLike,
 	options: fs.BufferEncodingOption | fs.EncodingOption | Callback<[string]>,
-	callback: Callback<[string]> | Callback<[Uint8Array]> = nop
+	callback: Callback<[string]> | Callback<[Uint8Array]> = nop,
 ): void {
 	callback = typeof options == 'function' ? options : callback;
 	promises
 		.readlink(path)
-		.then(result => (callback as Callback<[string | Uint8Array]>)(undefined, result))
+		.then((result) => (callback as Callback<[string | Uint8Array]>)(undefined, result))
 		.catch(callback);
 }
 readlink satisfies Omit<typeof fs.readlink, '__promisify__'>;
@@ -506,7 +505,7 @@ export function realpath(path: fs.PathLike, arg2?: Callback<[string]> | fs.Encod
 	cb = typeof arg2 === 'function' ? arg2 : cb;
 	promises
 		.realpath(path, typeof arg2 === 'function' ? null : arg2)
-		.then(result => cb(undefined, result))
+		.then((result) => cb(undefined, result))
 		.catch(cb);
 }
 realpath satisfies Omit<typeof fs.realpath, '__promisify__' | 'native'>;
@@ -541,7 +540,7 @@ export function watchFile(path: fs.PathLike, options: { persistent?: boolean; in
 export function watchFile(
 	path: fs.PathLike,
 	options: { persistent?: boolean; interval?: number } | ((curr: Stats, prev: Stats) => void),
-	listener?: (curr: Stats, prev: Stats) => void
+	listener?: (curr: Stats, prev: Stats) => void,
 ): void {
 	const normalizedPath = normalizePath(path.toString());
 	const opts = typeof options != 'function' ? options : {};
@@ -749,7 +748,7 @@ export function mkdtemp(prefix: string, options: fs.EncodingOption | fs.BufferEn
 	callback = typeof options === 'function' ? options : callback;
 	promises
 		.mkdtemp(prefix, typeof options != 'function' ? (options as fs.EncodingOption) : null)
-		.then(result => (callback as Callback<[string | Buffer]>)(undefined, result))
+		.then((result) => (callback as Callback<[string | Buffer]>)(undefined, result))
 		.catch(callback);
 }
 mkdtemp satisfies Omit<typeof fs.mkdtemp, '__promisify__'>;
@@ -797,7 +796,7 @@ export function opendir(path: fs.PathLike, options: fs.OpenDirOptions | Callback
 	cb = typeof options === 'function' ? options : cb;
 	promises
 		.opendir(path, typeof options === 'function' ? undefined : options)
-		.then(result => cb(undefined, result))
+		.then((result) => cb(undefined, result))
 		.catch(cb);
 }
 opendir satisfies Omit<typeof fs.opendir, '__promisify__'>;
@@ -820,7 +819,7 @@ export function statfs(path: fs.PathLike, options?: fs.StatFsOptions | Callback<
 	callback = typeof options === 'function' ? options : callback;
 	promises
 		.statfs(path, typeof options === 'function' ? undefined : options)
-		.then(result => (callback as Callback<[fs.StatsFs | fs.BigIntStatsFs]>)(undefined, result))
+		.then((result) => (callback as Callback<[fs.StatsFs | fs.BigIntStatsFs]>)(undefined, result))
 		.catch(callback);
 }
 statfs satisfies Omit<typeof fs.statfs, '__promisify__'>;

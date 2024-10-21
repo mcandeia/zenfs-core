@@ -3,11 +3,11 @@ import { O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_SYNC, O_TRUNC, O_WRONLY,
 import { Errno, ErrnoError } from './error.js';
 import type { FileSystem } from './filesystem.js';
 import { size_max } from './inode.js';
-import { Stats, type FileType } from './stats.js';
+import { type FileType, Stats } from './stats.js';
 import './polyfills.js';
 
 /**
-	Typescript does not include a type declaration for resizable array buffers. 
+	Typescript does not include a type declaration for resizable array buffers.
 	It has been standardized into ECMAScript though
 	@todo Remove this if TS adds them to lib declarations
 */
@@ -152,7 +152,7 @@ export abstract class File {
 		 * The file system that created the file
 		 */
 		public fs: FileSystem,
-		public readonly path: string
+		public readonly path: string,
 	) {}
 
 	/**
@@ -301,12 +301,12 @@ export class PreloadFile<FS extends FileSystem> extends File {
 		/**
 		 * A buffer containing the entire contents of the file.
 		 */
-		protected _buffer: Uint8Array = new Uint8Array(new ArrayBuffer(0, fs.metadata().noResizableBuffers ? {} : { maxByteLength: size_max }))
+		protected _buffer: Uint8Array = new Uint8Array(new ArrayBuffer(0, fs.metadata().noResizableBuffers ? {} : { maxByteLength: size_max })),
 	) {
 		super(fs, path);
 
 		/*
-			Note: 
+			Note:
 			This invariant is *not* maintained once the file starts getting modified.
 			It only actually matters if file is readable, as writeable modes may truncate/append to file.
 		*/

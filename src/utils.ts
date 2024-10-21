@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-return */
 import type * as fs from 'node:fs';
 import type { ClassLike, OptionalTuple } from 'utilium';
-import { dirname, resolve, type AbsolutePath } from './emulation/path.js';
+import { type AbsolutePath, dirname, resolve } from './emulation/path.js';
 import { Errno, ErrnoError } from './error.js';
 import type { FileSystem } from './filesystem.js';
 
@@ -67,7 +67,7 @@ export function levenshtein(a: string, b: string): number {
 
 	const vector = new Array<number>(la << 1);
 
-	for (let y = 0; y < la; ) {
+	for (let y = 0; y < la;) {
 		vector[la + y] = a.charCodeAt(offset + y);
 		vector[y] = ++y;
 	}
@@ -77,13 +77,13 @@ export function levenshtein(a: string, b: string): number {
 	let d1: number;
 	let d2: number;
 	let d3: number;
-	for (x = 0; x + 3 < lb; ) {
+	for (x = 0; x + 3 < lb;) {
 		const bx0 = b.charCodeAt(offset + (d0 = x));
 		const bx1 = b.charCodeAt(offset + (d1 = x + 1));
 		const bx2 = b.charCodeAt(offset + (d2 = x + 2));
 		const bx3 = b.charCodeAt(offset + (d3 = x + 3));
 		let dd = (x += 4);
-		for (let y = 0; y < la; ) {
+		for (let y = 0; y < la;) {
 			const ay = vector[la + y];
 			const dy = vector[y];
 			d0 = _min(dy, d0, d1, bx0, ay);
@@ -99,7 +99,7 @@ export function levenshtein(a: string, b: string): number {
 	}
 
 	let dd: number = 0;
-	for (; x < lb; ) {
+	for (; x < lb;) {
 		const bx0 = b.charCodeAt(offset + (d0 = x));
 		dd = ++x;
 		for (let y = 0; y < la; y++) {
@@ -248,7 +248,7 @@ export function normalizeOptions(
 	options: fs.WriteFileOptions | (fs.EncodingOption & { flag?: fs.OpenMode }) | undefined,
 	encoding: BufferEncoding | null = 'utf8',
 	flag: string,
-	mode: number = 0
+	mode: number = 0,
 ): { encoding?: BufferEncoding | null; flag: string; mode: number } {
 	if (typeof options != 'object' || options === null) {
 		return {

@@ -1,5 +1,5 @@
 import { Stats, type StatsLike } from './stats.js';
-import { types as t, struct, sizeof, serialize, deserialize } from 'utilium';
+import { deserialize, serialize, sizeof, struct, types as t } from 'utilium';
 
 /**
  * Alias for an ino.
@@ -64,16 +64,26 @@ export class Inode implements StatsLike {
 		this.birthtimeMs = now;
 	}
 
-	@t.uint64 public ino!: Ino;
-	@t.uint32 public size!: number;
-	@t.uint16 public mode!: number;
-	@t.uint32 public nlink!: number;
-	@t.uint32 public uid!: number;
-	@t.uint32 public gid!: number;
-	@t.float64 public atimeMs!: number;
-	@t.float64 public birthtimeMs!: number;
-	@t.float64 public mtimeMs!: number;
-	@t.float64 public ctimeMs!: number;
+	@t.uint64
+	public ino!: Ino;
+	@t.uint32
+	public size!: number;
+	@t.uint16
+	public mode!: number;
+	@t.uint32
+	public nlink!: number;
+	@t.uint32
+	public uid!: number;
+	@t.uint32
+	public gid!: number;
+	@t.float64
+	public atimeMs!: number;
+	@t.float64
+	public birthtimeMs!: number;
+	@t.float64
+	public mtimeMs!: number;
+	@t.float64
+	public ctimeMs!: number;
 
 	/**
 	 * Handy function that converts the Inode to a Node Stats object.

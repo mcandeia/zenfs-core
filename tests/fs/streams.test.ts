@@ -14,14 +14,14 @@ suite('ReadStream', () => {
 	test('ReadStream reads data correctly', (_, done) => {
 		const readStream = fs.createReadStream(testFilePath);
 		let data = '';
-		readStream.on('data', chunk => {
+		readStream.on('data', (chunk) => {
 			data += chunk;
 		});
 		readStream.on('end', () => {
 			assert(data == testData);
 			done();
 		});
-		readStream.on('error', err => {
+		readStream.on('error', (err) => {
 			done(err);
 		});
 	});
@@ -32,7 +32,7 @@ suite('ReadStream', () => {
 		readStream.on('close', () => {
 			closed = true;
 		});
-		readStream.close(err => {
+		readStream.close((err) => {
 			assert(err === undefined);
 			assert(closed);
 			done();
@@ -57,10 +57,10 @@ suite('ReadStream', () => {
 
 	test('ReadStream close method can be called multiple times', (_, done) => {
 		const readStream = new fs.ReadStream();
-		readStream.close(err => {
+		readStream.close((err) => {
 			assert(err === undefined);
 			// Call close again
-			readStream.close(err2 => {
+			readStream.close((err2) => {
 				assert(err2 === undefined);
 				done();
 			});
@@ -71,7 +71,7 @@ suite('ReadStream', () => {
 suite('WriteStream', () => {
 	test.skip('WriteStream writes data correctly', (_, done) => {
 		const writeStream = fs.createWriteStream(testFilePathWrite);
-		writeStream.write(testData, 'utf8', err => {
+		writeStream.write(testData, 'utf8', (err) => {
 			if (err) {
 				done(err);
 				return;
@@ -82,7 +82,7 @@ suite('WriteStream', () => {
 			assert(fs.readFileSync(testFilePathWrite, 'utf8') == testData);
 			done();
 		});
-		writeStream.on('error', err => {
+		writeStream.on('error', (err) => {
 			done(err);
 		});
 	});
@@ -93,7 +93,7 @@ suite('WriteStream', () => {
 		writeStream.on('close', () => {
 			closed = true;
 		});
-		writeStream.close(err => {
+		writeStream.close((err) => {
 			assert(err === undefined);
 			assert(closed);
 			done();
@@ -118,10 +118,10 @@ suite('WriteStream', () => {
 
 	test('WriteStream close method can be called multiple times', (_, done) => {
 		const writeStream = new fs.WriteStream();
-		writeStream.close(err => {
+		writeStream.close((err) => {
 			assert(err === undefined);
 			// Call close again
-			writeStream.close(err2 => {
+			writeStream.close((err2) => {
 				assert(err2 === undefined);
 				done();
 			});
@@ -135,7 +135,7 @@ suite('FileHandle', () => {
 		const readStream = fileHandle.createReadStream();
 		let data = '';
 		await new Promise<void>((resolve, reject) => {
-			readStream.on('data', chunk => {
+			readStream.on('data', (chunk) => {
 				data += chunk;
 			});
 			readStream.on('end', () => {
@@ -151,7 +151,7 @@ suite('FileHandle', () => {
 		const fileHandle = await fs.promises.open(testFilePathWrite, 'w');
 		const writeStream = fileHandle.createWriteStream();
 		await new Promise<void>((resolve, reject) => {
-			writeStream.write(testData, 'utf8', err => {
+			writeStream.write(testData, 'utf8', (err) => {
 				if (err) return reject(err);
 				writeStream.end();
 			});

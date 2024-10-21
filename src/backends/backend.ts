@@ -1,5 +1,5 @@
 import type { RequiredKeys } from 'utilium';
-import { ErrnoError, Errno } from '../error.js';
+import { Errno, ErrnoError } from '../error.js';
 import type { FileSystem } from '../filesystem.js';
 import { levenshtein } from '../utils.js';
 
@@ -70,7 +70,6 @@ export interface Backend<FS extends FileSystem = FileSystem, TOptions extends ob
 	 * Returns 'true' if this backend is available in the current
 	 * environment. For example, a backend using a browser API will return
 	 * 'false' if the API is unavailable
-	 *
 	 */
 	isAvailable(): boolean | Promise<boolean>;
 }
@@ -113,18 +112,18 @@ export async function checkOptions<T extends Backend>(backend: T, options: Recor
 			if any incorrect options provided, which ones are close to the provided one?
 			(edit distance 5 === close)*/
 			const incorrectOptions = Object.keys(options)
-				.filter(o => !(o in backend.options))
+				.filter((o) => !(o in backend.options))
 				.map((a: string) => {
 					return { str: a, distance: levenshtein(optName, a) };
 				})
-				.filter(o => o.distance < 5)
+				.filter((o) => o.distance < 5)
 				.sort((a, b) => a.distance - b.distance);
 
 			throw new ErrnoError(
 				Errno.EINVAL,
 				`${backend.name}: Required option '${optName}' not provided.${
 					incorrectOptions.length > 0 ? ` You provided '${incorrectOptions[0].str}', did you mean '${optName}'.` : ''
-				}`
+				}`,
 			);
 		}
 		// Option provided, check type.
@@ -134,7 +133,7 @@ export async function checkOptions<T extends Backend>(backend: T, options: Recor
 				Errno.EINVAL,
 				`${backend.name}: Value provided for option ${optName} is not the proper type. Expected ${
 					Array.isArray(opt.type) ? `one of {${opt.type.join(', ')}}` : opt.type
-				}, but received ${typeof providedValue}`
+				}, but received ${typeof providedValue}`,
 			);
 		}
 

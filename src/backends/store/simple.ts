@@ -1,5 +1,5 @@
 import type { Ino } from '../../inode.js';
-import { SyncTransaction, type Store } from './store.js';
+import { type Store, SyncTransaction } from './store.js';
 
 /**
  * An interface for simple synchronous stores that don't have special support for transactions and such.
@@ -80,7 +80,7 @@ export class SimpleTransaction extends SyncTransaction<SimpleSyncStore> {
 	 */
 	protected modifiedKeys: Set<Ino> = new Set();
 
-	protected declare store: SimpleSyncStore;
+	declare protected store: SimpleSyncStore;
 
 	public getSync(ino: Ino): Uint8Array {
 		const val = this.store.get(ino);

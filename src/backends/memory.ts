@@ -1,7 +1,7 @@
 import type { Ino } from '../inode.js';
 import type { Backend } from './backend.js';
 import { StoreFS } from './store/fs.js';
-import { SimpleTransaction, type SimpleSyncStore } from './store/simple.js';
+import { type SimpleSyncStore, SimpleTransaction } from './store/simple.js';
 
 /**
  * A simple in-memory store

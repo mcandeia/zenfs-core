@@ -57,7 +57,6 @@ export interface FetchOptions {
 /**
  * A simple filesystem backed by HTTP using the `fetch` API.
  *
- *
  * Index objects look like the following:
  *
  * ```json

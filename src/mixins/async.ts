@@ -1,6 +1,6 @@
 import { join } from '../emulation/path.js';
 import { Errno, ErrnoError } from '../error.js';
-import { parseFlag, PreloadFile, type File } from '../file.js';
+import { type File, parseFlag, PreloadFile } from '../file.js';
 import type { FileSystem } from '../filesystem.js';
 import type { Stats } from '../stats.js';
 import type { AsyncFSMethods, Mixin } from './shared.js';
@@ -18,10 +18,9 @@ export type AsyncOperation = {
  * Synchronous methods on an asynchronous FS are implemented by performing operations over the in-memory copy,
  * while asynchronously pipelining them to the backing store.
  * During loading, the contents of the async file system are preloaded into the synchronous store.
- *
  */
 export function Async<T extends typeof FileSystem>(
-	FS: T
+	FS: T,
 ): Mixin<
 	T,
 	{
@@ -53,7 +52,7 @@ export function Async<T extends typeof FileSystem>(
 		}
 
 		public queueDone(): Promise<void> {
-			return new Promise(resolve => {
+			return new Promise((resolve) => {
 				const check = (): unknown => (this._queueRunning ? setTimeout(check) : resolve());
 				check();
 			});

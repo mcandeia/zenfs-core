@@ -23,7 +23,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /*
 This is derived from the POSIX path code of NodeJS
-https://raw.githubusercontent.com/nodejs/node/3907bd1/lib/path.js 
+https://raw.githubusercontent.com/nodejs/node/3907bd1/lib/path.js
 */
 
 import type { ParsedPath } from 'node:path';

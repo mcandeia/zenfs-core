@@ -8,10 +8,10 @@ It works using a system of backends, which are used by ZenFS to store and retrie
 
 ZenFS is modular and extensible. The core includes some built-in backends:
 
--   `InMemory`: Stores files in-memory. This is cleared when the runtime ends (e.g. a user navigating away from a web page or a Node process exiting)
--   `Overlay`: Use read-only file system as read-write by overlaying a writable file system on top of it. ([copy-on-write](https://en.wikipedia.org/wiki/Copy-on-write))
--   `Fetch`: Downloads files over HTTP with the `fetch` API (_readonly_)
--   `Port`: Interacts with a remote over a `MessagePort`-like interface (e.g. a worker)
+- `InMemory`: Stores files in-memory. This is cleared when the runtime ends (e.g. a user navigating away from a web page or a Node process exiting)
+- `Overlay`: Use read-only file system as read-write by overlaying a writable file system on top of it. ([copy-on-write](https://en.wikipedia.org/wiki/Copy-on-write))
+- `Fetch`: Downloads files over HTTP with the `fetch` API (_readonly_)
+- `Port`: Interacts with a remote over a `MessagePort`-like interface (e.g. a worker)
 
 ZenFS supports a number of other backends. Many are provided as separate packages under `@zenfs`. More backends can be defined by separate libraries by extending the `FileSystem` class and providing a `Backend` object.
 
@@ -30,8 +30,8 @@ npm install @zenfs/core
 ## Usage
 
 > [!NOTE]
-> The examples are written in ESM.  
-> If you are using CJS, you can `require` the package.  
+> The examples are written in ESM.\
+> If you are using CJS, you can `require` the package.\
 > If using a browser environment, you can use a `<script>` with `type=module` (you may need to use import maps)
 
 ```js
@@ -123,7 +123,7 @@ If you would like to create backends without configure (e.g. to do something dyn
 You can then mount and unmount the backend instance by using `mount` and `umount`.
 
 ```js
-import { configure, resolveMountConfig, InMemory } from '@zenfs/core';
+import { configure, InMemory, resolveMountConfig } from '@zenfs/core';
 import { IndexedDB } from '@zenfs/dom';
 import { Zip } from '@zenfs/zip';
 
@@ -154,10 +154,10 @@ ZenFS exports a drop-in for Node's `fs` module (up to the version of `@types/nod
 
 ## Building
 
--   Make sure you have Node and NPM installed. You must have Node v18 or newer.
--   Install dependencies with `npm install`
--   Build using `npm run build`
--   You can find the built code in `dist`.
+- Make sure you have Node and NPM installed. You must have Node v18 or newer.
+- Install dependencies with `npm install`
+- Build using `npm run build`
+- You can find the built code in `dist`.
 
 ### Testing
 

@@ -71,7 +71,7 @@ const entries = new Map();
 
 function computeEntries(path) {
 	try {
-		if (options.ignore.some(pattern => minimatch(path, pattern))) {
+		if (options.ignore.some((pattern) => minimatch(path, pattern))) {
 			if (!options.quiet) console.log(`${color('yellow', 'skip')} ${path}`);
 			return;
 		}

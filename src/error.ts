@@ -260,7 +260,7 @@ export class ErrnoError extends Error implements NodeJS.ErrnoException {
 
 	public code: keyof typeof Errno;
 
-	public declare stack: string;
+	declare public stack: string;
 
 	public constructor(
 		/**
@@ -272,7 +272,7 @@ export class ErrnoError extends Error implements NodeJS.ErrnoException {
 		 */
 		message: string = errorMessages[errno],
 		public path?: string,
-		public syscall: string = ''
+		public syscall: string = '',
 	) {
 		super(message);
 		this.code = Errno[errno] as keyof typeof Errno;

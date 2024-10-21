@@ -21,5 +21,5 @@ export default tseslint.config(
 			'@typescript-eslint/no-unsafe-argument': 'off',
 		},
 	},
-	{ name: 'Ignores', ignores: ['tests/{fixtures,coverage}'] }
+	{ name: 'Ignores', ignores: ['tests/{fixtures,coverage}'] },
 );

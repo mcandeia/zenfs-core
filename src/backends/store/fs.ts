@@ -80,7 +80,7 @@ export class StoreFS<T extends Store = Store> extends FileSystem {
 		const nodeId: Ino = oldDirList[oldName];
 		delete oldDirList[oldName];
 
-		/* 
+		/*
 			Can't move a folder inside itself.
 			This ensures that the check passes only if `oldPath` is a subpath of `newParent`.
 			We append '/' to avoid matching folders that are a substring of the bottom-most folder in the path.
@@ -129,7 +129,7 @@ export class StoreFS<T extends Store = Store> extends FileSystem {
 		const ino: Ino = oldDirList[oldName];
 		delete oldDirList[oldName];
 
-		/* 
+		/*
 			Can't move a folder inside itself.
 			This ensures that the check passes only if `oldPath` is a subpath of `newParent`.
 			We append '/' to avoid matching folders that are a substring of the bottom-most folder in the path.

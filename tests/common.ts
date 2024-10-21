@@ -1,6 +1,6 @@
 import { fs } from '../src/index.js';
 import { join, relative } from 'path';
-import { statSync, readFileSync, readdirSync } from 'fs';
+import { readdirSync, readFileSync, statSync } from 'fs';
 import { Worker } from 'worker_threads';
 
 export const fixturesDir = 'tests/fixtures/node';

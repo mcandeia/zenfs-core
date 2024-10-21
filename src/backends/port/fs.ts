@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FileReadResult } from 'node:fs/promises';
 import type { ExtractProperties } from 'utilium';
-import { resolveMountConfig, type MountConfiguration } from '../../config.js';
+import { type MountConfiguration, resolveMountConfig } from '../../config.js';
 import { Errno, ErrnoError } from '../../error.js';
 import { File } from '../../file.js';
 import { FileSystem, type FileSystemMetadata } from '../../filesystem.js';
 import { Async } from '../../mixins/async.js';
-import { Stats, type FileType } from '../../stats.js';
+import { type FileType, Stats } from '../../stats.js';
 import type { Backend, FilesystemOf } from '../backend.js';
 import { InMemory } from '../memory.js';
 import * as RPC from './rpc.js';
@@ -26,7 +26,7 @@ export class PortFile extends File {
 		public fs: PortFS,
 		public readonly fd: number,
 		path: string,
-		public position: number
+		public position: number,
 	) {
 		super(fs, path);
 	}
@@ -39,7 +39,7 @@ export class PortFile extends File {
 				method,
 				args,
 			},
-			this.fs.options
+			this.fs.options,
 		);
 	}
 
@@ -175,7 +175,7 @@ export class PortFS extends Async(FileSystem) {
 				method,
 				args,
 			},
-			{ ...this.options, fs: this }
+			{ ...this.options, fs: this },
 		);
 	}
 
@@ -283,11 +283,11 @@ export async function handleRequest(port: RPC.Port, fs: FileSystem, request: Fil
 }
 
 export function attachFS(port: RPC.Port, fs: FileSystem): void {
-	RPC.attach<FileOrFSRequest>(port, request => handleRequest(port, fs, request));
+	RPC.attach<FileOrFSRequest>(port, (request) => handleRequest(port, fs, request));
 }
 
 export function detachFS(port: RPC.Port, fs: FileSystem): void {
-	RPC.detach<FileOrFSRequest>(port, request => handleRequest(port, fs, request));
+	RPC.detach<FileOrFSRequest>(port, (request) => handleRequest(port, fs, request));
 }
 
 const _Port = {

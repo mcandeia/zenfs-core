@@ -26,7 +26,7 @@ await configure({
 Worker:
 
 ```ts
-import { InMemory, resolveRemoteMount, attachFS } from '@zenfs/core';
+import { attachFS, InMemory, resolveRemoteMount } from '@zenfs/core';
 import { parentPort } from 'node:worker_threads';
 
 await resolveRemoteMount(parentPort, { backend: InMemory, name: 'tmp' });
@@ -37,7 +37,7 @@ If you are using using web workers, you would use `self` instead of importing `p
 #### Using with multiple ports on the same thread
 
 ```ts
-import { InMemory, fs, resolveMountConfig, resolveRemoteMount, Port } from '@zenfs/core';
+import { fs, InMemory, Port, resolveMountConfig, resolveRemoteMount } from '@zenfs/core';
 import { MessageChannel } from 'node:worker_threads';
 
 const { port1: localPort, port2: remotePort } = new MessageChannel();

@@ -9,7 +9,7 @@ import type { Mixin } from './shared.js';
  */
 /* eslint-disable @typescript-eslint/require-await */
 export function Readonly<T extends typeof FileSystem>(
-	FS: T
+	FS: T,
 ): Mixin<
 	T,
 	{

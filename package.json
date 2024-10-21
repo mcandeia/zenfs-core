@@ -74,7 +74,6 @@
 		"eslint": "^9.8.0",
 		"globals": "^15.9.0",
 		"lint-staged": "^15.2.7",
-		"prettier": "^3.2.5",
 		"tsx": "^4.19.1",
 		"typedoc": "^0.26.10",
 		"typedoc-plugin-remove-references": "^0.0.6",

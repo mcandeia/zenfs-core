@@ -3,7 +3,7 @@
 import { isJSON } from 'utilium';
 import { basename, dirname } from '../emulation/path.js';
 import { Errno, ErrnoError } from '../error.js';
-import { NoSyncFile, isWriteable } from '../file.js';
+import { isWriteable, NoSyncFile } from '../file.js';
 import { FileSystem } from '../filesystem.js';
 import { Readonly } from '../mixins/readonly.js';
 import type { StatsLike } from '../stats.js';
@@ -199,7 +199,7 @@ export abstract class IndexFS extends Readonly(FileSystem) {
 		if (!Array.isArray(content)) {
 			throw ErrnoError.With('ENODATA', path, 'readdir');
 		}
-		if (!content.every(item => typeof item == 'string')) {
+		if (!content.every((item) => typeof item == 'string')) {
 			throw ErrnoError.With('ENODATA', path, 'readdir');
 		}
 		return content as string[];

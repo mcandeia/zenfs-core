@@ -1,6 +1,6 @@
 import type { ErrnoError } from './error.js';
 import type { File } from './file.js';
-import { ZenFsType, type Stats } from './stats.js';
+import { type Stats, ZenFsType } from './stats.js';
 
 export type FileContents = ArrayBufferView | string;
 

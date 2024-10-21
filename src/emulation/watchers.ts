@@ -4,7 +4,7 @@ import type * as fs from 'node:fs';
 import { ErrnoError } from '../error.js';
 import { isStatsEqual, type Stats } from '../stats.js';
 import { normalizePath } from '../utils.js';
-import { dirname, basename } from './path.js';
+import { basename, dirname } from './path.js';
 import { statSync } from './sync.js';
 
 /**
@@ -62,17 +62,14 @@ class Watcher<TEvents extends Record<string, unknown[]> = Record<string, unknown
  *
  * @template T The type of the filename, either `string` or `Buffer`.
  */
-export class FSWatcher<T extends string | Buffer = string | Buffer>
-	extends Watcher<{
-		change: [eventType: fs.WatchEventType, filename: T];
-		close: [];
-		error: [error: Error];
-	}>
-	implements fs.FSWatcher
-{
+export class FSWatcher<T extends string | Buffer = string | Buffer> extends Watcher<{
+	change: [eventType: fs.WatchEventType, filename: T];
+	close: [];
+	error: [error: Error];
+}> implements fs.FSWatcher {
 	public constructor(
 		path: string,
-		public readonly options: fs.WatchOptions
+		public readonly options: fs.WatchOptions,
 	) {
 		super(path);
 		addWatcher(path.toString(), this);
@@ -93,20 +90,17 @@ export class FSWatcher<T extends string | Buffer = string | Buffer>
  *
  * Instances of `StatWatcher` are used by `fs.watchFile()` to monitor changes to a file's statistics.
  */
-export class StatWatcher
-	extends Watcher<{
-		change: [current: Stats, previous: Stats];
-		close: [];
-		error: [error: Error];
-	}>
-	implements fs.StatWatcher
-{
+export class StatWatcher extends Watcher<{
+	change: [current: Stats, previous: Stats];
+	close: [];
+	error: [error: Error];
+}> implements fs.StatWatcher {
 	private intervalId?: NodeJS.Timeout | number;
 	private previous?: Stats;
 
 	public constructor(
 		path: string,
-		private options: { persistent?: boolean; interval?: number }
+		private options: { persistent?: boolean; interval?: number },
 	) {
 		super(path);
 		this.start();

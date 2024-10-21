@@ -439,7 +439,7 @@ export function readdirSync(path: fs.PathLike, options: { recursive?: boolean; w
 export function readdirSync(path: fs.PathLike, options?: (fs.ObjectEncodingOptions & { withFileTypes?: false; recursive?: boolean }) | BufferEncoding | null): string[] | Buffer[];
 export function readdirSync(
 	path: fs.PathLike,
-	options?: { recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null; withFileTypes?: boolean } | BufferEncoding | 'buffer' | null
+	options?: { recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null; withFileTypes?: boolean } | BufferEncoding | 'buffer' | null,
 ): string[] | Dirent[] | Buffer[] {
 	path = normalizePath(path);
 	const { fs, path: resolved } = resolveMount(existsSync(path) ? realpathSync(path) : path);

@@ -1,5 +1,5 @@
 import type * as Node from 'fs';
-import { credentials, type Credentials } from './credentials.js';
+import { type Credentials, credentials } from './credentials.js';
 import { S_IFBLK, S_IFCHR, S_IFDIR, S_IFIFO, S_IFLNK, S_IFMT, S_IFREG, S_IFSOCK, S_IRWXG, S_IRWXO, S_IRWXU } from './emulation/constants.js';
 import { size_max } from './inode.js';
 

@@ -1,7 +1,7 @@
 import { dirname } from '../emulation/path.js';
 import { Errno, ErrnoError } from '../error.js';
 import type { File } from '../file.js';
-import { PreloadFile, parseFlag } from '../file.js';
+import { parseFlag, PreloadFile } from '../file.js';
 import type { FileSystemMetadata } from '../filesystem.js';
 import { FileSystem } from '../filesystem.js';
 import { Mutexed } from '../mixins/mutexed.js';

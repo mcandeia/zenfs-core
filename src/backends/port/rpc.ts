@@ -83,7 +83,7 @@ const executors: Map<string, Executor> = new Map();
 
 export function request<const TRequest extends Request, TValue>(
 	request: Omit<TRequest, 'id' | 'stack' | '_zenfs'>,
-	{ port, timeout = 1000, fs }: Partial<Options> & { fs?: PortFS } = {}
+	{ port, timeout = 1000, fs }: Partial<Options> & { fs?: PortFS } = {},
 ): Promise<TValue> {
 	const stack = '\n' + new Error().stack!.slice('Error:'.length);
 	if (!port) {
