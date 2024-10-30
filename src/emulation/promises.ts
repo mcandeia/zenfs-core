@@ -7,19 +7,18 @@ import type { ReadableStreamController, ReadableStream as TReadableStream } from
 import type { Interface as ReadlineInterface } from 'readline';
 import { Errno, ErrnoError } from '../error.js';
 import type { File } from '../file.js';
-import { flagToMode, isAppendable, isExclusive, isReadable, isTruncating, isWriteable, parseFlag } from '../file.js';
+import { isAppendable, isReadable, isWriteable, parseFlag } from '../file.js';
 import type { FileContents } from '../filesystem.js';
 import '../polyfills.js';
 import { BigIntStats, type Stats } from '../stats.js';
-import { decodeUTF8, normalizeMode, normalizeOptions, normalizePath, normalizeTime } from '../utils.js';
+import { normalizeMode, normalizeOptions, normalizeTime } from '../utils.js';
 import * as constants from './constants.js';
-import { Dir, Dirent } from './dir.js';
-import { dirname, join, parse } from './path.js';
-import { _statfs, fd2file, fdMap, file2fd, fixError, mounts, resolveMount } from './shared.js';
+import type { Dir, Dirent } from './dir.js';
+import { FileSystemCall } from './fscall.js';
+import { fd2file, fdMap, file2fd } from './shared.js';
 import { ReadStream, WriteStream } from './streams.js';
-import { FSWatcher, emitChange } from './watchers.js';
+import { emitChange } from './watchers.js';
 export * as constants from './constants.js';
-
 export class FileHandle implements promises.FileHandle {
 	/**
 	 * The file descriptor for this file handle.
@@ -382,25 +381,8 @@ export class FileHandle implements promises.FileHandle {
 }
 
 export async function rename(oldPath: fs.PathLike, newPath: fs.PathLike): Promise<void> {
-	oldPath = normalizePath(oldPath);
-	newPath = normalizePath(newPath);
-	const src = resolveMount(oldPath);
-	const dst = resolveMount(newPath);
-	if (!(await stat(dirname(oldPath))).hasAccess(constants.W_OK)) {
-		throw ErrnoError.With('EACCES', oldPath, 'rename');
-	}
-	try {
-		if (src.mountPoint == dst.mountPoint) {
-			await src.fs.rename(src.path, dst.path);
-			emitChange('rename', oldPath.toString());
-			return;
-		}
-		await writeFile(newPath, await readFile(oldPath));
-		await unlink(oldPath);
-		emitChange('rename', oldPath.toString());
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [src.path]: oldPath, [dst.path]: newPath });
-	}
+	using fs = new FileSystemCall();
+	return fs.rename(oldPath, newPath);
 }
 rename satisfies typeof promises.rename;
 
@@ -408,130 +390,32 @@ rename satisfies typeof promises.rename;
  * Test whether or not `path` exists by checking with the file system.
  */
 export async function exists(path: fs.PathLike): Promise<boolean> {
-	try {
-		const { fs, path: resolved } = resolveMount(await realpath(path));
-		return await fs.exists(resolved);
-	} catch (e) {
-		if (e instanceof ErrnoError && e.code == 'ENOENT') {
-			return false;
-		}
-
-		throw e;
-	}
+	using fs = new FileSystemCall();
+	return fs.exists(path);
 }
 
 export async function stat(path: fs.PathLike, options: fs.BigIntOptions): Promise<BigIntStats>;
 export async function stat(path: fs.PathLike, options?: { bigint?: false }): Promise<Stats>;
 export async function stat(path: fs.PathLike, options?: fs.StatOptions): Promise<Stats | BigIntStats>;
 export async function stat(path: fs.PathLike, options?: fs.StatOptions): Promise<Stats | BigIntStats> {
-	path = normalizePath(path);
-	const { fs, path: resolved } = resolveMount(await realpath(path));
-	try {
-		const stats = await fs.stat(resolved);
-		if (!stats.hasAccess(constants.R_OK)) {
-			throw ErrnoError.With('EACCES', resolved, 'stat');
-		}
-		return options?.bigint ? new BigIntStats(stats) : stats;
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [resolved]: path });
-	}
+	using fs = new FileSystemCall();
+	return fs.stat(path, options);
 }
 stat satisfies typeof promises.stat;
-
-/**
- * `lstat`.
- * `lstat()` is identical to `stat()`, except that if path is a symbolic link,
- * then the link itself is stat-ed, not the file that it refers to.
- */
-export async function lstat(path: fs.PathLike, options?: { bigint?: boolean }): Promise<Stats>;
-export async function lstat(path: fs.PathLike, options: { bigint: true }): Promise<BigIntStats>;
-export async function lstat(path: fs.PathLike, options?: fs.StatOptions): Promise<Stats | BigIntStats> {
-	path = normalizePath(path);
-	const { fs, path: resolved } = resolveMount(path);
-	try {
-		const stats = await fs.stat(resolved);
-		return options?.bigint ? new BigIntStats(stats) : stats;
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [resolved]: path });
-	}
-}
-lstat satisfies typeof promises.lstat;
 
 // FILE-ONLY METHODS
 
 export async function truncate(path: fs.PathLike, len: number = 0): Promise<void> {
-	await using handle = await open(path, 'r+');
-	await handle.truncate(len);
+	using fs = new FileSystemCall();
+	return fs.truncate(path, len);
 }
 truncate satisfies typeof promises.truncate;
 
 export async function unlink(path: fs.PathLike): Promise<void> {
-	path = normalizePath(path);
-	const { fs, path: resolved } = resolveMount(path);
-	try {
-		if (!(await fs.stat(resolved)).hasAccess(constants.W_OK)) {
-			throw ErrnoError.With('EACCES', resolved, 'unlink');
-		}
-		await fs.unlink(resolved);
-		emitChange('rename', path.toString());
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [resolved]: path });
-	}
+	using fs = new FileSystemCall();
+	return fs.unlink(path);
 }
 unlink satisfies typeof promises.unlink;
-
-/**
- * Opens a file. This helper handles the complexity of file flags.
- * @internal
- */
-async function _open(path: fs.PathLike, _flag: fs.OpenMode, _mode: fs.Mode = 0o644, resolveSymlinks: boolean): Promise<FileHandle> {
-	path = normalizePath(path);
-	const mode = normalizeMode(_mode, 0o644),
-		flag = parseFlag(_flag);
-
-	path = resolveSymlinks ? await realpath(path) : path;
-	const { fs, path: resolved } = resolveMount(path);
-
-	const stats = await fs.stat(resolved).catch(() => null);
-
-	if (!stats) {
-		if ((!isWriteable(flag) && !isAppendable(flag)) || flag == 'r+') {
-			throw ErrnoError.With('ENOENT', path, '_open');
-		}
-		// Create the file
-		const parentStats: Stats = await fs.stat(dirname(resolved));
-		if (!parentStats.hasAccess(constants.W_OK)) {
-			throw ErrnoError.With('EACCES', dirname(path), '_open');
-		}
-		if (!parentStats.isDirectory()) {
-			throw ErrnoError.With('ENOTDIR', dirname(path), '_open');
-		}
-		return new FileHandle(await fs.createFile(resolved, flag, mode));
-	}
-
-	if (!stats.hasAccess(flagToMode(flag))) {
-		throw ErrnoError.With('EACCES', path, '_open');
-	}
-
-	if (isExclusive(flag)) {
-		throw ErrnoError.With('EEXIST', path, '_open');
-	}
-
-	const handle = new FileHandle(await fs.openFile(resolved, flag));
-
-	/*
-		In a previous implementation, we deleted the file and
-		re-created it. However, this created a race condition if another
-		asynchronous request was trying to read the file, as the file
-		would not exist for a small period of time.
-	*/
-	if (isTruncating(flag)) {
-		await handle.truncate(0);
-		await handle.sync();
-	}
-
-	return handle;
-}
 
 /**
  * Asynchronous file open.
@@ -540,7 +424,8 @@ async function _open(path: fs.PathLike, _flag: fs.OpenMode, _mode: fs.Mode = 0o6
  * @param mode Mode to use to open the file. Can be ignored if the filesystem doesn't support permissions.
  */
 export async function open(path: fs.PathLike, flag: fs.OpenMode = 'r', mode: fs.Mode = 0o644): Promise<FileHandle> {
-	return await _open(path, flag, mode, true);
+	using fs = new FileSystemCall();
+	return fs.open(path, flag, mode);
 }
 open satisfies typeof promises.open;
 
@@ -560,9 +445,8 @@ export async function readFile(
 	path: fs.PathLike | promises.FileHandle,
 	_options?: (fs.ObjectEncodingOptions & { flag?: fs.OpenMode }) | BufferEncoding | null
 ): Promise<Buffer | string> {
-	const options = normalizeOptions(_options, null, 'r', 0o644);
-	await using handle: FileHandle | promises.FileHandle = typeof path == 'object' && 'fd' in path ? path : await open(path as string, options.flag, options.mode);
-	return await handle.readFile(options);
+	const fs = new FileSystemCall();
+	return fs.readFile(path, _options);
 }
 readFile satisfies typeof promises.readFile;
 
@@ -579,14 +463,8 @@ export async function writeFile(
 	data: FileContents | Stream | Iterable<string | ArrayBufferView> | AsyncIterable<string | ArrayBufferView>,
 	_options?: (fs.ObjectEncodingOptions & { mode?: fs.Mode; flag?: fs.OpenMode; flush?: boolean }) | BufferEncoding | null
 ): Promise<void> {
-	const options = normalizeOptions(_options, 'utf8', 'w+', 0o644);
-	await using handle = path instanceof FileHandle ? path : await open((path as fs.PathLike).toString(), options.flag, options.mode);
-
-	const _data = typeof data == 'string' ? data : data;
-	if (typeof _data != 'string' && !(_data instanceof Uint8Array)) {
-		throw new ErrnoError(Errno.EINVAL, 'Iterables and streams not supported', handle.file.path, 'writeFile');
-	}
-	await handle.writeFile(_data, options);
+	using fs = new FileSystemCall();
+	return fs.writeFile(path, data, _options);
 }
 writeFile satisfies typeof promises.writeFile;
 
@@ -601,36 +479,16 @@ export async function appendFile(
 	data: FileContents,
 	_options?: BufferEncoding | (fs.EncodingOption & { mode?: fs.Mode; flag?: fs.OpenMode }) | null
 ): Promise<void> {
-	const options = normalizeOptions(_options, 'utf8', 'a', 0o644);
-	const flag = parseFlag(options.flag);
-	if (!isAppendable(flag)) {
-		throw new ErrnoError(Errno.EINVAL, 'Flag passed to appendFile must allow for appending.');
-	}
-	if (typeof data != 'string' && !options.encoding) {
-		throw new ErrnoError(Errno.EINVAL, 'Encoding not specified');
-	}
-	const encodedData = typeof data == 'string' ? Buffer.from(data, options.encoding!) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-	await using handle: FileHandle | promises.FileHandle = typeof path == 'object' && 'fd' in path ? path : await open(path as string, options.flag, options.mode);
-
-	await handle.appendFile(encodedData, options);
+	using fs = new FileSystemCall();
+	return fs.appendFile(path, data, _options);
 }
 appendFile satisfies typeof promises.appendFile;
 
 // DIRECTORY-ONLY METHODS
 
 export async function rmdir(path: fs.PathLike): Promise<void> {
-	path = normalizePath(path);
-	path = await realpath(path);
-	const { fs, path: resolved } = resolveMount(path);
-	try {
-		if (!(await fs.stat(resolved)).hasAccess(constants.W_OK)) {
-			throw ErrnoError.With('EACCES', resolved, 'rmdir');
-		}
-		await fs.rmdir(resolved);
-		emitChange('rename', path.toString());
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [resolved]: path });
-	}
+	using fs = new FileSystemCall();
+	return fs.rmdir(path);
 }
 rmdir satisfies typeof promises.rmdir;
 
@@ -644,39 +502,8 @@ export async function mkdir(path: fs.PathLike, options: fs.MakeDirectoryOptions 
 export async function mkdir(path: fs.PathLike, options?: fs.Mode | (fs.MakeDirectoryOptions & { recursive?: false | undefined }) | null): Promise<void>;
 export async function mkdir(path: fs.PathLike, options?: fs.Mode | fs.MakeDirectoryOptions | null): Promise<string | undefined>;
 export async function mkdir(path: fs.PathLike, options?: fs.Mode | fs.MakeDirectoryOptions | null): Promise<string | undefined | void> {
-	options = typeof options === 'object' ? options : { mode: options };
-	const mode = normalizeMode(options?.mode, 0o777);
-
-	path = await realpath(normalizePath(path));
-	const { fs, path: resolved } = resolveMount(path);
-	const errorPaths: Record<string, string> = { [resolved]: path };
-
-	try {
-		if (!options?.recursive) {
-			if (!(await fs.stat(dirname(resolved))).hasAccess(constants.W_OK)) {
-				throw ErrnoError.With('EACCES', dirname(resolved), 'mkdir');
-			}
-			await fs.mkdir(resolved, mode);
-			emitChange('rename', path.toString());
-			return;
-		}
-
-		const dirs: string[] = [];
-		for (let dir = resolved, origDir = path; !(await fs.exists(dir)); dir = dirname(dir), origDir = dirname(origDir)) {
-			dirs.unshift(dir);
-			errorPaths[dir] = origDir;
-		}
-		for (const dir of dirs) {
-			if (!(await fs.stat(dirname(dir))).hasAccess(constants.W_OK)) {
-				throw ErrnoError.With('EACCES', dirname(dir), 'mkdir');
-			}
-			await fs.mkdir(dir, mode);
-			emitChange('rename', dir);
-		}
-		return dirs[0];
-	} catch (e) {
-		throw fixError(e as ErrnoError, errorPaths);
-	}
+	const fs = new FileSystemCall();
+	return fs.mkdir(path, options);
 }
 mkdir satisfies typeof promises.mkdir;
 
@@ -700,90 +527,15 @@ export async function readdir(
 	path: fs.PathLike,
 	options?: { withFileTypes?: boolean; recursive?: boolean; encoding?: BufferEncoding | 'buffer' | null } | BufferEncoding | 'buffer' | null
 ): Promise<string[] | Dirent[] | Buffer[]> {
-	options = typeof options === 'object' ? options : { encoding: options };
-	path = await realpath(normalizePath(path));
-
-	const { fs, path: resolved } = resolveMount(path);
-
-	if (!(await fs.stat(resolved)).hasAccess(constants.R_OK)) {
-		throw ErrnoError.With('EACCES', path, 'readdir');
-	}
-
-	const entries = await fs.readdir(resolved).catch((e: ErrnoError) => {
-		throw fixError(e, { [resolved]: path });
-	});
-
-	for (const point of mounts.keys()) {
-		if (point.startsWith(path)) {
-			const entry = point.slice(path.length);
-			if (entry.includes('/') || entry.length == 0) {
-				// ignore FSs mounted in subdirectories and any FS mounted to `path`.
-				continue;
-			}
-			entries.push(entry);
-		}
-	}
-
-	const values: (string | Dirent | Buffer)[] = [];
-	for (const entry of entries) {
-		let stats: Stats | undefined | void;
-		if (options?.recursive || options?.withFileTypes) {
-			stats = await fs.stat(join(resolved, entry)).catch((error: ErrnoError) => {
-				throw fixError(error, { [resolved]: path });
-			});
-		}
-		if (options?.withFileTypes) {
-			values.push(new Dirent(entry, stats!));
-		} else if (options?.encoding === 'buffer') {
-			values.push(Buffer.from(entry));
-		} else {
-			values.push(entry);
-		}
-
-		if (!options?.recursive || !stats?.isDirectory()) {
-			continue;
-		}
-
-		for (const subEntry of await readdir(join(path, entry), options)) {
-			if (subEntry instanceof Dirent) {
-				subEntry.path = join(entry, subEntry.path);
-				values.push(subEntry);
-			} else if (Buffer.isBuffer(subEntry)) {
-				// Convert Buffer to string, prefix with the full path
-				values.push(Buffer.from(join(entry, decodeUTF8(subEntry))));
-			} else {
-				values.push(join(entry, subEntry));
-			}
-		}
-	}
-
-	return values as string[] | Dirent[];
+	using fs = new FileSystemCall();
+	return fs.readdir(path, options);
 }
+
 readdir satisfies typeof promises.readdir;
 
 export async function link(targetPath: fs.PathLike, linkPath: fs.PathLike): Promise<void> {
-	targetPath = normalizePath(targetPath);
-	if (!(await stat(dirname(targetPath))).hasAccess(constants.R_OK)) {
-		throw ErrnoError.With('EACCES', dirname(targetPath), 'link');
-	}
-	linkPath = normalizePath(linkPath);
-	if (!(await stat(dirname(linkPath))).hasAccess(constants.W_OK)) {
-		throw ErrnoError.With('EACCES', dirname(linkPath), 'link');
-	}
-
-	const { fs, path } = resolveMount(targetPath);
-	const link = resolveMount(linkPath);
-	if (fs != link.fs) {
-		throw ErrnoError.With('EXDEV', linkPath, 'link');
-	}
-	try {
-		if (!(await fs.stat(path)).hasAccess(constants.W_OK)) {
-			throw ErrnoError.With('EACCES', path, 'link');
-		}
-		return await fs.link(path, link.path);
-	} catch (e) {
-		throw fixError(e as ErrnoError, { [link.path]: linkPath, [path]: targetPath });
-	}
+	using fs = new FileSystemCall();
+	return fs.link(targetPath, linkPath);
 }
 link satisfies typeof promises.link;
 
@@ -794,17 +546,8 @@ link satisfies typeof promises.link;
  * @param type can be either `'dir'` or `'file'` (default is `'file'`)
  */
 export async function symlink(target: fs.PathLike, path: fs.PathLike, type: fs.symlink.Type | string | null = 'file'): Promise<void> {
-	if (!['file', 'dir', 'junction'].includes(type!)) {
-		throw new ErrnoError(Errno.EINVAL, 'Invalid symlink type: ' + type);
-	}
-
-	if (await exists(path)) {
-		throw ErrnoError.With('EEXIST', path.toString(), 'symlink');
-	}
-
-	await writeFile(path, target.toString());
-	const handle = await _open(path, 'r+', 0o644, false);
-	await handle.file._setType(constants.S_IFLNK);
+	using fs = new FileSystemCall();
+	return fs.symlink(target, path, type);
 }
 symlink satisfies typeof promises.symlink;
 
@@ -812,36 +555,34 @@ export async function readlink(path: fs.PathLike, options: fs.BufferEncodingOpti
 export async function readlink(path: fs.PathLike, options?: fs.EncodingOption | null): Promise<string>;
 export async function readlink(path: fs.PathLike, options?: fs.BufferEncodingOption | fs.EncodingOption | string | null): Promise<string | Buffer>;
 export async function readlink(path: fs.PathLike, options?: fs.BufferEncodingOption | fs.EncodingOption | string | null): Promise<string | Buffer> {
-	await using handle = await _open(normalizePath(path), 'r', 0o644, false);
-	const value = await handle.readFile();
-	const encoding = typeof options == 'object' ? options?.encoding : options;
-	return encoding == 'buffer' ? value : value.toString(encoding! as BufferEncoding);
+	using fs = new FileSystemCall();
+	return fs.readlink(path, options);
 }
 readlink satisfies typeof promises.readlink;
 
 // PROPERTY OPERATIONS
 
 export async function chown(path: fs.PathLike, uid: number, gid: number): Promise<void> {
-	await using handle = await open(path, 'r+');
-	await handle.chown(uid, gid);
+	using fs = new FileSystemCall();
+	return fs.chown(path, uid, gid);
 }
 chown satisfies typeof promises.chown;
 
 export async function lchown(path: fs.PathLike, uid: number, gid: number): Promise<void> {
-	await using handle: FileHandle = await _open(path, 'r+', 0o644, false);
-	await handle.chown(uid, gid);
+	using fs = new FileSystemCall();
+	return fs.lchown(path, uid, gid);
 }
 lchown satisfies typeof promises.lchown;
 
 export async function chmod(path: fs.PathLike, mode: fs.Mode): Promise<void> {
-	await using handle = await open(path, 'r+');
-	await handle.chmod(mode);
+	using fs = new FileSystemCall();
+	return fs.chmod(path, mode);
 }
 chmod satisfies typeof promises.chmod;
 
 export async function lchmod(path: fs.PathLike, mode: fs.Mode): Promise<void> {
-	await using handle: FileHandle = await _open(path, 'r+', 0o644, false);
-	await handle.chmod(mode);
+	using fs = new FileSystemCall();
+	return fs.lchmod(path, mode);
 }
 lchmod satisfies typeof promises.lchmod;
 
@@ -849,8 +590,8 @@ lchmod satisfies typeof promises.lchmod;
  * Change file timestamps of the file referenced by the supplied path.
  */
 export async function utimes(path: fs.PathLike, atime: string | number | Date, mtime: string | number | Date): Promise<void> {
-	await using handle = await open(path, 'r+');
-	await handle.utimes(atime, mtime);
+	using fs = new FileSystemCall();
+	return fs.utimes(path, atime, mtime);
 }
 utimes satisfies typeof promises.utimes;
 
@@ -858,8 +599,8 @@ utimes satisfies typeof promises.utimes;
  * Change file timestamps of the file referenced by the supplied path.
  */
 export async function lutimes(path: fs.PathLike, atime: fs.TimeLike, mtime: fs.TimeLike): Promise<void> {
-	await using handle: FileHandle = await _open(path, 'r+', 0o644, false);
-	await handle.utimes(new Date(atime), new Date(mtime));
+	using fs = new FileSystemCall();
+	return fs.lutimes(path, atime, mtime);
 }
 lutimes satisfies typeof promises.lutimes;
 
@@ -872,24 +613,8 @@ lutimes satisfies typeof promises.lutimes;
 export async function realpath(path: fs.PathLike, options: fs.BufferEncodingOption): Promise<Buffer>;
 export async function realpath(path: fs.PathLike, options?: fs.EncodingOption | BufferEncoding): Promise<string>;
 export async function realpath(path: fs.PathLike, options?: fs.EncodingOption | BufferEncoding | fs.BufferEncodingOption): Promise<string | Buffer> {
-	path = normalizePath(path);
-	const { base, dir } = parse(path);
-	const lpath = join(dir == '/' ? '/' : await realpath(dir), base);
-	const { fs, path: resolvedPath, mountPoint } = resolveMount(lpath);
-
-	try {
-		const stats = await fs.stat(resolvedPath);
-		if (!stats.isSymbolicLink()) {
-			return lpath;
-		}
-
-		return await realpath(mountPoint + (await readlink(lpath)));
-	} catch (e) {
-		if ((e as ErrnoError).code == 'ENOENT') {
-			return path;
-		}
-		throw fixError(e as ErrnoError, { [resolvedPath]: lpath });
-	}
+	using fs = new FileSystemCall();
+	return fs.realpath(path, options as fs.EncodingOption);
 }
 realpath satisfies typeof promises.realpath;
 
@@ -897,45 +622,14 @@ export function watch(filename: fs.PathLike, options?: fs.WatchOptions | BufferE
 export function watch(filename: fs.PathLike, options: fs.WatchOptions | fs.BufferEncodingOption): AsyncIterable<promises.FileChangeInfo<Buffer>>;
 export function watch(filename: fs.PathLike, options?: fs.WatchOptions | string): AsyncIterable<promises.FileChangeInfo<string>> | AsyncIterable<promises.FileChangeInfo<Buffer>>;
 export function watch<T extends string | Buffer>(filename: fs.PathLike, options: fs.WatchOptions | string = {}): AsyncIterable<promises.FileChangeInfo<T>> {
-	return {
-		[Symbol.asyncIterator](): AsyncIterator<promises.FileChangeInfo<T>> {
-			const watcher = new FSWatcher<T>(filename.toString(), typeof options !== 'string' ? options : { encoding: options as BufferEncoding | 'buffer' });
-
-			// A queue to hold change events, since we need to resolve them in the async iterator
-			const eventQueue: ((value: IteratorResult<promises.FileChangeInfo<T>>) => void)[] = [];
-
-			watcher.on('change', (eventType: promises.FileChangeInfo<T>['eventType'], filename: T) => {
-				eventQueue.shift()?.({ value: { eventType, filename }, done: false });
-			});
-
-			function cleanup() {
-				watcher.close();
-				for (const resolve of eventQueue) {
-					resolve({ value: null, done: true });
-				}
-				eventQueue.length = 0; // Clear the queue
-				return Promise.resolve({ value: null, done: true as const });
-			}
-
-			return {
-				async next() {
-					const { promise, resolve } = Promise.withResolvers<IteratorResult<promises.FileChangeInfo<T>>>();
-					eventQueue.push(resolve);
-					return promise;
-				},
-				return: cleanup,
-				throw: cleanup,
-			};
-		},
-	};
+	using fs = new FileSystemCall();
+	return fs.watch(filename, options) as AsyncIterable<promises.FileChangeInfo<T>>;
 }
 watch satisfies typeof promises.watch;
 
 export async function access(path: fs.PathLike, mode: number = constants.F_OK): Promise<void> {
-	const stats = await stat(path);
-	if (!stats.hasAccess(mode)) {
-		throw new ErrnoError(Errno.EACCES);
-	}
+	using fs = new FileSystemCall();
+	return fs.access(path, mode);
 }
 access satisfies typeof promises.access;
 
@@ -944,37 +638,8 @@ access satisfies typeof promises.access;
  * @param path The path to the file or directory to remove.
  */
 export async function rm(path: fs.PathLike, options?: fs.RmOptions) {
-	path = normalizePath(path);
-
-	const stats = await stat(path).catch((error: ErrnoError) => {
-		if (error.code != 'ENOENT' || !options?.force) throw error;
-	});
-
-	if (!stats) {
-		return;
-	}
-
-	switch (stats.mode & constants.S_IFMT) {
-		case constants.S_IFDIR:
-			if (options?.recursive) {
-				for (const entry of await readdir(path)) {
-					await rm(join(path, entry), options);
-				}
-			}
-
-			await rmdir(path);
-			return;
-		case constants.S_IFREG:
-		case constants.S_IFLNK:
-			await unlink(path);
-			return;
-		case constants.S_IFBLK:
-		case constants.S_IFCHR:
-		case constants.S_IFIFO:
-		case constants.S_IFSOCK:
-		default:
-			throw new ErrnoError(Errno.EPERM, 'File type not supported', path, 'rm');
-	}
+	using fs = new FileSystemCall();
+	return fs.rm(path, options);
 }
 rm satisfies typeof promises.rm;
 
@@ -987,13 +652,8 @@ rm satisfies typeof promises.rm;
 export async function mkdtemp(prefix: string, options?: fs.EncodingOption): Promise<string>;
 export async function mkdtemp(prefix: string, options?: fs.BufferEncodingOption): Promise<Buffer>;
 export async function mkdtemp(prefix: string, options?: fs.EncodingOption | fs.BufferEncodingOption): Promise<string | Buffer> {
-	const encoding = typeof options === 'object' ? options?.encoding : options || 'utf8';
-	const fsName = `${prefix}${Date.now()}-${Math.random().toString(36).slice(2)}`;
-	const resolvedPath = '/tmp/' + fsName;
-
-	await mkdir(resolvedPath);
-
-	return encoding == 'buffer' ? Buffer.from(resolvedPath) : resolvedPath;
+	using fs = new FileSystemCall();
+	return fs.mkdtemp(prefix, options as fs.EncodingOption);
 }
 mkdtemp satisfies typeof promises.mkdtemp;
 
@@ -1005,15 +665,8 @@ mkdtemp satisfies typeof promises.mkdtemp;
  *    * `fs.constants.COPYFILE_EXCL`: If the destination file already exists, the operation fails.
  */
 export async function copyFile(src: fs.PathLike, dest: fs.PathLike, mode?: number): Promise<void> {
-	src = normalizePath(src);
-	dest = normalizePath(dest);
-
-	if (mode && mode & constants.COPYFILE_EXCL && (await exists(dest))) {
-		throw new ErrnoError(Errno.EEXIST, 'Destination file already exists.', dest, 'copyFile');
-	}
-
-	await writeFile(dest, await readFile(src));
-	emitChange('rename', dest.toString());
+	using fs = new FileSystemCall();
+	return fs.copyFile(src, dest, mode);
 }
 copyFile satisfies typeof promises.copyFile;
 
@@ -1025,8 +678,8 @@ copyFile satisfies typeof promises.copyFile;
  * @todo Use options
  */
 export function opendir(path: fs.PathLike, options?: fs.OpenDirOptions): Promise<Dir> {
-	path = normalizePath(path);
-	return Promise.resolve(new Dir(path));
+	using fs = new FileSystemCall();
+	return fs.opendir(path, options);
 }
 opendir satisfies typeof promises.opendir;
 
@@ -1043,44 +696,8 @@ opendir satisfies typeof promises.opendir;
  *   * `recursive`: If `true`, copies directories recursively.
  */
 export async function cp(source: fs.PathLike, destination: fs.PathLike, opts?: fs.CopyOptions): Promise<void> {
-	source = normalizePath(source);
-	destination = normalizePath(destination);
-
-	const srcStats = await lstat(source); // Use lstat to follow symlinks if not dereferencing
-
-	if (opts?.errorOnExist && (await exists(destination))) {
-		throw new ErrnoError(Errno.EEXIST, 'Destination file or directory already exists.', destination, 'cp');
-	}
-
-	switch (srcStats.mode & constants.S_IFMT) {
-		case constants.S_IFDIR:
-			if (!opts?.recursive) {
-				throw new ErrnoError(Errno.EISDIR, source + ' is a directory (not copied)', source, 'cp');
-			}
-			await mkdir(destination, { recursive: true }); // Ensure the destination directory exists
-			for (const dirent of await readdir(source, { withFileTypes: true })) {
-				if (opts.filter && !opts.filter(join(source, dirent.name), join(destination, dirent.name))) {
-					continue; // Skip if the filter returns false
-				}
-				await cp(join(source, dirent.name), join(destination, dirent.name), opts);
-			}
-			break;
-		case constants.S_IFREG:
-		case constants.S_IFLNK:
-			await copyFile(source, destination);
-			break;
-		case constants.S_IFBLK:
-		case constants.S_IFCHR:
-		case constants.S_IFIFO:
-		case constants.S_IFSOCK:
-		default:
-			throw new ErrnoError(Errno.EPERM, 'File type not supported', source, 'rm');
-	}
-
-	// Optionally preserve timestamps
-	if (opts?.preserveTimestamps) {
-		await utimes(destination, srcStats.atime, srcStats.mtime);
-	}
+	using fs = new FileSystemCall();
+	return fs.cp(source, destination, opts);
 }
 cp satisfies typeof promises.cp;
 
@@ -1092,7 +709,19 @@ export async function statfs(path: fs.PathLike, opts?: fs.StatFsOptions & { bigi
 export async function statfs(path: fs.PathLike, opts: fs.StatFsOptions & { bigint: true }): Promise<fs.BigIntStatsFs>;
 export async function statfs(path: fs.PathLike, opts?: fs.StatFsOptions): Promise<fs.StatsFs | fs.BigIntStatsFs>;
 export function statfs(path: fs.PathLike, opts?: fs.StatFsOptions): Promise<fs.StatsFs | fs.BigIntStatsFs> {
-	path = normalizePath(path);
-	const { fs } = resolveMount(path);
-	return Promise.resolve(_statfs(fs, opts?.bigint));
+	using fs = new FileSystemCall();
+	return fs.statfs(path, opts);
 }
+
+/**
+ * `lstat`.
+ * `lstat()` is identical to `stat()`, except that if path is a symbolic link,
+ * then the link itself is stat-ed, not the file that it refers to.
+ */
+export async function lstat(path: fs.PathLike, options?: { bigint?: boolean }): Promise<Stats>;
+export async function lstat(path: fs.PathLike, options: { bigint: true }): Promise<BigIntStats>;
+export async function lstat(path: fs.PathLike, options?: fs.StatOptions): Promise<Stats | BigIntStats> {
+	using fs = new FileSystemCall();
+	return fs.lstat(path, options);
+}
+lstat satisfies typeof promises.lstat;
